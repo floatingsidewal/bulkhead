@@ -1,0 +1,29 @@
+{
+  "name": "@bulkhead/server",
+  "version": "0.1.0",
+  "description": "Bulkhead guardrails HTTP REST and MCP server",
+  "license": "MIT",
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
+  "bin": {
+    "bulkhead-server": "./dist/main.js",
+    "bulkhead-mcp": "./dist/mcp/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bulkhead/core": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "fastify": "^5.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@bulkhead/core",
+  "version": "0.1.0",
+  "description": "Cascading content protection engine — PII detection, secret scanning, prompt injection defense",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "string-similarity": "^4.0.4"
+  },
+  "devDependencies": {
+    "@types/string-similarity": "^4.0.2"
+  }
+}

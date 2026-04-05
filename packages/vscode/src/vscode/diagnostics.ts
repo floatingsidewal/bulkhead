@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import type { GuardResult, Detection } from "../types";
+import type { GuardResult, Detection } from "@bulkhead/core";
 
 export const DIAGNOSTIC_COLLECTION_NAME = "bulkhead";
 

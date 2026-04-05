@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+*.md
+!README.md
+test
+training
+models
+docs
+.env
+.env.*
+packages/vscode

@@ -1,9 +1,5 @@
 import * as vscode from "vscode";
-import { GuardrailsEngine } from "./engine/engine";
-import { PiiGuard } from "./guards/pii.guard";
-import { SecretGuard } from "./guards/secret.guard";
-import { InjectionGuard } from "./guards/injection.guard";
-import { LeakageGuard } from "./guards/leakage.guard";
+import { createEngine, type GuardrailsEngine } from "@bulkhead/core";
 import { getConfig } from "./vscode/config";
 import {
   createDiagnosticCollection,
@@ -21,7 +17,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(diagnosticCollection);
 
   // Initialize engine with guards + cascade
-  engine = createEngine();
+  engine = createEngine(getConfig());
 
   // Register code action provider for all file types
   context.subscriptions.push(
@@ -69,7 +65,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration("bulkhead")) {
         engine.dispose();
-        engine = createEngine();
+        engine = createEngine(getConfig());
         for (const editor of vscode.window.visibleTextEditors) {
           scanDocument(editor.document);
         }
@@ -92,35 +88,6 @@ export function activate(context: vscode.ExtensionContext): void {
   for (const editor of vscode.window.visibleTextEditors) {
     scanDocument(editor.document);
   }
-}
-
-function createEngine(): GuardrailsEngine {
-  const config = getConfig();
-  const newEngine = new GuardrailsEngine();
-
-  if (config.guards.pii.enabled) {
-    newEngine.addGuard(new PiiGuard());
-  }
-  if (config.guards.secret.enabled) {
-    newEngine.addGuard(new SecretGuard());
-  }
-  if (config.guards.injection.enabled) {
-    newEngine.addGuard(new InjectionGuard());
-    newEngine.addGuard(new LeakageGuard());
-  }
-
-  // Initialize cascade for deep scan (BERT + LLM layers)
-  if (config.cascade.modelEnabled) {
-    newEngine.initCascade({
-      bertEnabled: true,
-      llmEnabled: config.guards.contentSafety.enabled,
-      escalationThreshold: config.cascade.escalationThreshold,
-      contextSentences: config.cascade.contextSentences,
-      modelId: config.cascade.modelId,
-    });
-  }
-
-  return newEngine;
 }
 
 /** Auto-scan uses regex-only path (Layer 1) — always fast */

@@ -2,7 +2,14 @@
 
 ## Overview
 
-Bulkhead uses a **cascading classifier** — three detection layers that progressively trade speed for depth. Each layer acts as a filter that only escalates what it can't resolve with confidence.
+The cascading classifier is Bulkhead's core architectural contribution. The detection
+patterns are ported from established open-source projects (Microsoft Presidio for PII,
+HAI-Guardrails for secrets and injection -- see [ATTRIBUTION.md](../ATTRIBUTION.md)).
+What Bulkhead adds is the three-layer cascade that routes detections through
+progressively more expensive classifiers, the BERT worker thread integration, the LLM
+disambiguation layer, and the deduplication logic that merges results across layers.
+
+The cascade uses three detection layers that progressively trade speed for depth. Each layer acts as a filter that only escalates what it can't resolve with confidence.
 
 ```
 ┌─────────────────────────────────────────────────────┐

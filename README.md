@@ -1,23 +1,29 @@
 # Bulkhead
 
-**Content protection guardrails for AI-powered development tools.**
+**Cascading content protection for AI-powered development tools.**
 
-Bulkhead is a VS Code extension that detects and redacts sensitive content — PII, secrets, prompt injection, and system prompt leakage — before it leaks through LLM-powered features like code completion, chat, and inline suggestions.
+Bulkhead is a VS Code extension that detects and redacts sensitive content -- PII, secrets, prompt injection, and system prompt leakage -- before it leaks through LLM-powered features like code completion, chat, and inline suggestions.
+
+## What Makes Bulkhead Different
+
+The core innovation is the **cascading classifier** -- three detection layers that progressively trade speed for depth, so expensive inference only runs on the small fraction of content that actually needs it. Regex handles the bulk (sub-millisecond, every keystroke). A BERT model resolves contextual entities like names and locations. An LLM disambiguates the genuinely hard cases ("Is 'Jordan' a person or a country?"). Each detection carries full provenance -- which layer flagged it, at what confidence, and why.
+
+The detection patterns themselves are ported from established open-source projects (see [Attribution](#attribution)). Bulkhead's contribution is the cascade architecture, the BERT worker thread integration, the LLM disambiguation layer, the VS Code integration, and the deduplication logic that ties it all together.
 
 ## The Problem
 
 Every time you use an AI coding assistant, your editor content gets sent to an LLM. That content can include:
 
-- **Personal data** — SSNs, credit cards, emails, phone numbers, medical IDs
-- **Secrets** — API keys, tokens, database credentials, private keys
-- **Prompt injection** — malicious instructions hidden in code comments or data
-- **System prompt leakage** — attempts to extract your AI tool's configuration
+- **Personal data** -- SSNs, credit cards, emails, phone numbers, medical IDs
+- **Secrets** -- API keys, tokens, database credentials, private keys
+- **Prompt injection** -- malicious instructions hidden in code comments or data
+- **System prompt leakage** -- attempts to extract your AI tool's configuration
 
 Bulkhead sits between your editor and the AI, catching sensitive content before it leaves.
 
 ## How It Works
 
-Bulkhead uses a **cascading classifier** — three detection layers that trade off speed against depth:
+Bulkhead uses the **cascading classifier** -- three detection layers that trade off speed against depth:
 
 | Layer | Speed | What it catches | When it runs |
 |-------|-------|----------------|--------------|
@@ -30,7 +36,7 @@ Each detection carries **provenance** — which layer flagged it, at what confid
 ## What It Detects
 
 ### PII (45+ entity types across 20+ countries)
-Ported from [Microsoft Presidio](https://github.com/microsoft/presidio) with checksum validation (Luhn, IBAN mod-97, Verhoeff) and context-aware scoring.
+Patterns ported from [Microsoft Presidio](https://github.com/microsoft/presidio) with checksum validation (Luhn, IBAN mod-97, Verhoeff) and context-aware scoring.
 
 - **Generic:** Credit cards, email, IBAN, IP addresses, MAC addresses, phone numbers, URLs, crypto wallets, dates
 - **US:** SSN, driver's license, passport, bank accounts, ITIN, Medicare (MBI), NPI, ABA routing, DEA license
@@ -113,10 +119,14 @@ See [docs/architecture.md](docs/architecture.md) for the full cascading classifi
 
 ## Attribution
 
-Bulkhead draws on two open-source projects. See [ATTRIBUTION.md](ATTRIBUTION.md) for details.
+Bulkhead derives detection patterns and guard architecture from two open-source
+projects. The cascading classifier, BERT integration, LLM disambiguation, VS Code
+extension, and deduplication logic are independently developed. See
+[ATTRIBUTION.md](ATTRIBUTION.md) for full details and [NOTICES](NOTICES) for
+original copyright notices.
 
-- **[Microsoft Presidio](https://github.com/microsoft/presidio)** (MIT) — PII detection patterns, checksum algorithms, entity taxonomy
-- **[HAI-Guardrails](https://github.com/presidio-oss/hai-guardrails)** (MIT) — Guard architecture, detection tactics, security patterns
+- **[Microsoft Presidio](https://github.com/microsoft/presidio)** (MIT) -- PII detection patterns, checksum algorithms, entity taxonomy
+- **[HAI-Guardrails](https://github.com/presidio-oss/hai-guardrails)** (MIT) -- Guard architecture, detection tactics, security patterns
 
 ## Contributing
 

@@ -5,7 +5,7 @@
 
 import { BaseGuard } from "./base.guard";
 import type { GuardConfig, GuardResult, Detection } from "../types";
-import { ALL_SECRET_PATTERNS } from "../patterns/secrets";
+import { ALL_SECRET_PATTERNS } from "../patterns/secrets/index";
 import { shannonEntropy } from "../validators/checksums";
 
 export class SecretGuard extends BaseGuard {

@@ -1,0 +1,102 @@
+{
+  "name": "bulkhead",
+  "displayName": "Bulkhead",
+  "description": "LLM guardrails for VS Code — PII detection, secret scanning, prompt injection defense, and content safety",
+  "version": "0.1.0",
+  "license": "MIT",
+  "publisher": "bulkhead",
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=18.0.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "bulkhead.scanFile",
+        "title": "Bulkhead: Scan File"
+      },
+      {
+        "command": "bulkhead.deepScan",
+        "title": "Bulkhead: Deep Scan (Regex + BERT + LLM)"
+      },
+      {
+        "command": "bulkhead.checkContentSafety",
+        "title": "Bulkhead: Check Content Safety"
+      }
+    ],
+    "configuration": {
+      "title": "Bulkhead",
+      "properties": {
+        "bulkhead.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Bulkhead guardrails"
+        },
+        "bulkhead.guards.pii.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable PII detection"
+        },
+        "bulkhead.guards.secret.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable secret/credential detection"
+        },
+        "bulkhead.guards.injection.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable prompt injection detection"
+        },
+        "bulkhead.guards.contentSafety.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable LLM-based content safety checks (requires LLM API)"
+        },
+        "bulkhead.debounceMs": {
+          "type": "number",
+          "default": 500,
+          "description": "Debounce delay in ms for automatic scanning"
+        },
+        "bulkhead.cascade.modelEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable BERT model for deep scanning (downloads ~29MB model on first use)"
+        },
+        "bulkhead.cascade.modelId": {
+          "type": "string",
+          "default": "gravitee-io/bert-small-pii-detection",
+          "description": "HuggingFace model ID for Layer 2 BERT classification"
+        },
+        "bulkhead.cascade.escalationThreshold": {
+          "type": "number",
+          "default": 0.75,
+          "description": "BERT confidence threshold (0-1). Below this, detections escalate to LLM."
+        },
+        "bulkhead.cascade.contextSentences": {
+          "type": "number",
+          "default": 3,
+          "description": "Number of sentences before/after an ambiguous span to send to LLM"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "npm run build -- --watch",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bulkhead/core": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.20.0"
+  }
+}

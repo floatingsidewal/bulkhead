@@ -1,0 +1,23 @@
+services:
+  bulkhead:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - BULKHEAD_PORT=3000
+      - BULKHEAD_HOST=0.0.0.0
+      - BULKHEAD_LOG_LEVEL=info
+      - BULKHEAD_CASCADE_MODEL_ENABLED=false
+      # Uncomment to enable LLM provider:
+      # - BULKHEAD_LLM_PROVIDER=anthropic
+      # - BULKHEAD_LLM_API_KEY=${BULKHEAD_LLM_API_KEY}
+    volumes:
+      - bert-models:/app/models
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  bert-models:

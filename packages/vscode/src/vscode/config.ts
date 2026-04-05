@@ -1,21 +1,5 @@
 import * as vscode from "vscode";
-
-export interface BulkheadConfig {
-  enabled: boolean;
-  debounceMs: number;
-  guards: {
-    pii: { enabled: boolean };
-    secret: { enabled: boolean };
-    injection: { enabled: boolean };
-    contentSafety: { enabled: boolean };
-  };
-  cascade: {
-    escalationThreshold: number;
-    contextSentences: number;
-    modelEnabled: boolean;
-    modelId: string;
-  };
-}
+import type { BulkheadConfig } from "@bulkhead/core";
 
 export function getConfig(): BulkheadConfig {
   const cfg = vscode.workspace.getConfiguration("bulkhead");
