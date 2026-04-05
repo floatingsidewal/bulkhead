@@ -25,7 +25,11 @@
   "dependencies": {
     "string-similarity": "^4.0.4"
   },
+  "optionalDependencies": {
+    "@huggingface/transformers": "^3.0.0"
+  },
   "devDependencies": {
-    "@types/string-similarity": "^4.0.2"
+    "@types/string-similarity": "^4.0.2",
+    "tsx": "^4.7.0"
   }
 }

@@ -1,6 +1,71 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { GuardrailsEngine } from "@bulkhead/core";
+import type { GuardrailsEngine, GuardResult, Detection } from "@bulkhead/core";
+
+/** Build a human-readable summary of detections with cascade layer info */
+function formatDetectionSummary(
+  results: GuardResult[],
+  mode: string
+): string {
+  const allDetections = results.flatMap((r) => r.detections);
+  const lines: string[] = [];
+
+  if (allDetections.length === 0) {
+    lines.push("No issues detected.");
+  } else {
+    lines.push(`Found ${allDetections.length} detection${allDetections.length === 1 ? "" : "s"}:`);
+    for (const d of allDetections) {
+      lines.push(`  ${d.entityType} (${d.source} → ${d.disposition}, ${d.score.toFixed(2)})`);
+    }
+  }
+
+  // Layer activity summary
+  lines.push("");
+  lines.push(formatLayerSummary(allDetections, mode));
+
+  return lines.join("\n");
+}
+
+/** Build cascade layer activity breakdown */
+function formatLayerSummary(detections: Detection[], mode: string): string {
+  if (mode === "fast") {
+    const confirmed = detections.filter((d) => d.source === "regex").length;
+    return `Cascade: regex only (${confirmed} detected) — use mode: deep for full cascade`;
+  }
+
+  const bySource: Record<string, Detection[]> = {};
+  for (const d of detections) {
+    (bySource[d.source] ??= []).push(d);
+  }
+
+  const parts: string[] = [];
+
+  const regex = bySource["regex"] ?? [];
+  if (regex.length > 0 || mode !== "deep") {
+    parts.push(`Layer 1 (regex): ${regex.length} confirmed`);
+  }
+
+  if (mode === "model" || mode === "deep") {
+    const bert = bySource["bert"] ?? [];
+    const bertConfirmed = bert.filter((d) => d.disposition === "confirmed").length;
+    const bertEscalated = bert.filter((d) => d.disposition === "escalate").length;
+    const bertParts = [`${bertConfirmed} confirmed`];
+    if (bertEscalated > 0) bertParts.push(`${bertEscalated} escalated`);
+    parts.push(`Layer 2 (BERT): ${bertParts.join(" + ")}`);
+  }
+
+  if (mode === "deep") {
+    const llm = bySource["llm"] ?? [];
+    const llmConfirmed = llm.filter((d) => d.disposition === "confirmed").length;
+    const llmDismissed = llm.filter((d) => d.disposition === "dismissed").length;
+    const llmParts: string[] = [];
+    if (llmConfirmed > 0) llmParts.push(`${llmConfirmed} confirmed`);
+    if (llmDismissed > 0) llmParts.push(`${llmDismissed} dismissed`);
+    parts.push(`Layer 3 (LLM): ${llmParts.length > 0 ? llmParts.join(" + ") : "no escalations"}`);
+  }
+
+  return `Cascade: ${parts.join(" → ")}`;
+}
 
 export function createMcpServer(engine: GuardrailsEngine): McpServer {
   const server = new McpServer({
@@ -34,9 +99,14 @@ export function createMcpServer(engine: GuardrailsEngine): McpServer {
 
       const passed = results.every((r) => r.passed);
       const allDetections = results.flatMap((r) => r.detections);
+      const summary = formatDetectionSummary(results, mode);
 
       return {
         content: [
+          {
+            type: "text" as const,
+            text: summary,
+          },
           {
             type: "text" as const,
             text: JSON.stringify(
@@ -76,9 +146,14 @@ export function createMcpServer(engine: GuardrailsEngine): McpServer {
     async ({ text }) => {
       const { passed, results, redactedText } = await engine.scan(text);
       const allDetections = results.flatMap((r) => r.detections);
+      const summary = formatDetectionSummary(results, "fast");
 
       return {
         content: [
+          {
+            type: "text" as const,
+            text: summary,
+          },
           {
             type: "text" as const,
             text: JSON.stringify(

@@ -6,9 +6,11 @@ export interface ServerConfig {
   logLevel: "info" | "warn" | "error" | "silent";
   corsOrigin: string | false;
   maxBodySize: number;
+  apiKey: string;
   llmProvider: "none" | "openai" | "anthropic" | "custom";
   llmApiKey: string;
   llmEndpoint: string;
+  llmTimeout: number;
 }
 
 export interface FullConfig {
@@ -44,9 +46,11 @@ export function loadConfig(): FullConfig {
       logLevel: (process.env.BULKHEAD_LOG_LEVEL as ServerConfig["logLevel"]) ?? "info",
       corsOrigin: process.env.BULKHEAD_CORS_ORIGIN || false,
       maxBodySize: envInt("BULKHEAD_MAX_BODY_SIZE", 1_048_576), // 1MB
+      apiKey: process.env.BULKHEAD_API_KEY ?? "",
       llmProvider: (process.env.BULKHEAD_LLM_PROVIDER as ServerConfig["llmProvider"]) ?? "none",
       llmApiKey: process.env.BULKHEAD_LLM_API_KEY ?? "",
       llmEndpoint: process.env.BULKHEAD_LLM_ENDPOINT ?? "",
+      llmTimeout: envInt("BULKHEAD_LLM_TIMEOUT", 10_000),
     },
     engine: {
       enabled: envBool("BULKHEAD_ENABLED", DEFAULT_CONFIG.enabled),

@@ -37,7 +37,7 @@ const DEFAULT_CASCADE_CONFIG: CascadeConfig = {
   contextSentences: 3,
   bertEnabled: true,
   llmEnabled: false,
-  modelId: "gravitee-io/bert-small-pii-detection",
+  modelId: "Xenova/bert-base-NER",
 };
 
 export class CascadeClassifier {
@@ -52,6 +52,13 @@ export class CascadeClassifier {
       contextSentences: this.config.contextSentences,
       provider: this.config.llmProvider,
     });
+  }
+
+  /** Whether the cascade is ready to serve (BERT model loaded if enabled) */
+  get ready(): boolean {
+    if (!this.config.bertEnabled) return true;
+    if (!this.bertLayer) return true; // Not yet initialized, will lazy-load
+    return this.bertLayer.loaded;
   }
 
   /** Register regex-based guards (Layer 1) */

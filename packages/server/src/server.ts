@@ -41,6 +41,22 @@ export function createServer(
     });
   }
 
+  // API key authentication (enabled when BULKHEAD_API_KEY is set)
+  if (config.apiKey) {
+    app.addHook("onRequest", async (request, reply) => {
+      // Skip auth for health/readiness/info endpoints
+      if (request.url === "/healthz" || request.url === "/readyz" || request.url === "/metrics") {
+        return;
+      }
+
+      // Require X-API-Key header on all other routes
+      const provided = request.headers["x-api-key"];
+      if (provided !== config.apiKey) {
+        return reply.status(401).send({ error: "Unauthorized" });
+      }
+    });
+  }
+
   // Error handler
   app.setErrorHandler(async (error: Error & { validation?: unknown }, _request, reply) => {
     if ("validation" in error && error.validation) {

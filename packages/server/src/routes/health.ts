@@ -7,11 +7,16 @@ export function registerHealthRoutes(app: FastifyInstance, engine: GuardrailsEng
     return reply.send({ status: "ok" });
   });
 
-  // Readiness probe — checks that the engine is ready to serve
+  // Readiness probe — checks that the engine and cascade are ready to serve
   app.get("/readyz", async (_request, reply) => {
-    return reply.send({
-      status: "ready",
+    const cascadeReady = engine.cascadeReady;
+    const status = cascadeReady ? "ready" : "loading";
+    const code = cascadeReady ? 200 : 503;
+
+    return reply.status(code).send({
+      status,
       guards: engine.guardNames,
+      cascadeReady,
     });
   });
 
@@ -21,6 +26,7 @@ export function registerHealthRoutes(app: FastifyInstance, engine: GuardrailsEng
       name: "bulkhead",
       version: "0.1.0",
       guards: engine.guardNames,
+      cascadeReady: engine.cascadeReady,
     });
   });
 }

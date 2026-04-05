@@ -71,7 +71,7 @@ export const DEFAULT_CONFIG: BulkheadConfig = {
     escalationThreshold: 0.75,
     contextSentences: 3,
     modelEnabled: false,
-    modelId: "gravitee-io/bert-small-pii-detection",
+    modelId: "Xenova/bert-base-NER",
   },
 };
 

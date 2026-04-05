@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "bulkhead": {
+      "command": "npx",
+      "args": ["tsx", "packages/server/src/mcp/index.ts"]
+    },
+    "bulkhead-docker": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "bulkhead", "packages/server/dist/mcp/index.js"]
+    }
+  }
+}

@@ -80,6 +80,12 @@ export class GuardrailsEngine {
     return this.guards.map((g) => g.name);
   }
 
+  /** Whether the cascade is ready (BERT model loaded if enabled) */
+  get cascadeReady(): boolean {
+    if (!this.cascade) return true; // No cascade = regex only, always ready
+    return this.cascade.ready;
+  }
+
   /** Initialize or update the cascade classifier */
   initCascade(config?: Partial<CascadeConfig>): CascadeClassifier {
     this.cascade = new CascadeClassifier(config);

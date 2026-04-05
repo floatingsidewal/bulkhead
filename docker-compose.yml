@@ -1,4 +1,5 @@
 services:
+  # HTTP REST server on port 3000
   bulkhead:
     build: .
     ports:
@@ -11,6 +12,20 @@ services:
       # Uncomment to enable LLM provider:
       # - BULKHEAD_LLM_PROVIDER=anthropic
       # - BULKHEAD_LLM_API_KEY=${BULKHEAD_LLM_API_KEY}
+    volumes:
+      - bert-models:/app/models
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  # MCP server on stdio (for use with AI coding assistants)
+  # Usage: docker compose run --rm -i bulkhead-mcp
+  bulkhead-mcp:
+    build: .
+    command: ["packages/server/dist/mcp/index.js"]
+    stdin_open: true
     volumes:
       - bert-models:/app/models
     read_only: true

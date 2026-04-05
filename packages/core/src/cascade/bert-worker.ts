@@ -63,9 +63,9 @@ async function analyze(
   return (results as any[]).map((r) => ({
     entity: r.entity_group ?? r.entity,
     score: r.score,
-    word: r.word,
-    start: r.start,
-    end: r.end,
+    word: r.word ?? r.text ?? "",
+    start: r.start ?? 0,
+    end: r.end ?? (r.start != null ? r.start + (r.word?.length ?? 0) : 0),
   }));
 }
 

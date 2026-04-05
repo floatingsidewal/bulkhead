@@ -5,10 +5,11 @@
 
 import { Worker } from "node:worker_threads";
 import { resolve } from "node:path";
+import { existsSync } from "node:fs";
 import type { Detection, Confidence } from "../types";
 import type { WorkerRequest, WorkerResponse, BertToken } from "./bert-worker";
 
-const DEFAULT_MODEL_ID = "gravitee-io/bert-small-pii-detection";
+const DEFAULT_MODEL_ID = "Xenova/bert-base-NER";
 
 export interface BertLayerConfig {
   modelId?: string;
@@ -25,6 +26,12 @@ export class BertLayer {
   private requestId = 0;
   private config: BertLayerConfig;
 
+  /** Whether the BERT model has been loaded and first inference completed */
+  private _loaded = false;
+  get loaded(): boolean {
+    return this._loaded;
+  }
+
   constructor(config?: Partial<BertLayerConfig>) {
     this.config = {
       escalationThreshold: 0.75,
@@ -32,11 +39,30 @@ export class BertLayer {
     };
   }
 
+  /** Resolve the worker path — supports both compiled .js and source .ts */
+  private resolveWorkerPath(): string {
+    const jsPath = resolve(__dirname, "bert-worker.js");
+    if (existsSync(jsPath)) return jsPath;
+
+    // Dev/test mode: use TypeScript source with tsx loader
+    const tsPath = resolve(__dirname, "bert-worker.ts");
+    if (existsSync(tsPath)) return tsPath;
+
+    return jsPath; // Fall back to .js (will error if missing)
+  }
+
   /** Ensure the worker thread is running */
   private ensureWorker(): Worker {
     if (!this.worker) {
-      const workerPath = resolve(__dirname, "bert-worker.js");
-      this.worker = new Worker(workerPath);
+      const workerPath = this.resolveWorkerPath();
+      const isTs = workerPath.endsWith(".ts");
+
+      // In dev/test mode (.ts), use tsx to transpile the worker on the fly
+      this.worker = isTs
+        ? new Worker(workerPath, {
+            execArgv: ["--require", "tsx/cjs"],
+          })
+        : new Worker(workerPath);
 
       this.worker.on("message", (msg: WorkerResponse) => {
         const pending = this.pendingRequests.get(msg.id);
@@ -84,6 +110,7 @@ export class BertLayer {
    */
   async analyze(text: string): Promise<Detection[]> {
     const tokens = await this.analyzeRaw(text);
+    this._loaded = true;
 
     return tokens.map((token) => {
       // Strip B-/I- prefix from entity labels (e.g., "B-PERSON" → "PERSON")
