@@ -23,9 +23,12 @@ export function resultsToDiagnostics(
       const range = new vscode.Range(startPos, endPos);
 
       const severity = getSeverity(detection);
+      const sourceLabel = detection.source ?? "regex";
+      const dispositionSuffix =
+        detection.disposition === "escalate" ? " (needs review)" : "";
       const diagnostic = new vscode.Diagnostic(
         range,
-        `[Bulkhead] ${detection.entityType}: ${detection.text.slice(0, 50)}${detection.text.length > 50 ? "..." : ""}`,
+        `[Bulkhead/${sourceLabel}] ${detection.entityType}: ${detection.text.slice(0, 50)}${detection.text.length > 50 ? "..." : ""}${dispositionSuffix}`,
         severity
       );
 
@@ -39,6 +42,10 @@ export function resultsToDiagnostics(
 }
 
 function getSeverity(detection: Detection): vscode.DiagnosticSeverity {
+  if (detection.disposition === "escalate")
+    return vscode.DiagnosticSeverity.Information;
+  if (detection.disposition === "dismissed")
+    return vscode.DiagnosticSeverity.Hint;
   if (detection.guardName === "secret") return vscode.DiagnosticSeverity.Error;
   if (detection.guardName === "injection") return vscode.DiagnosticSeverity.Error;
   if (detection.confidence === "high") return vscode.DiagnosticSeverity.Warning;

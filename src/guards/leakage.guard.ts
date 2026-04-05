@@ -23,15 +23,17 @@ export class LeakageGuard extends BaseGuard {
       const re = new RegExp(pattern.source, pattern.flags + "g");
       let match: RegExpExecArray | null;
       while ((match = re.exec(text)) !== null) {
-        detections.push({
-          entityType: "PROMPT_LEAKAGE",
-          start: match.index,
-          end: match.index + match[0].length,
-          text: match[0],
-          confidence: "high",
-          score: 0.9,
-          guardName: this.name,
-        });
+        detections.push(
+          this.makeDetection(text, {
+            entityType: "PROMPT_LEAKAGE",
+            start: match.index,
+            end: match.index + match[0].length,
+            text: match[0],
+            confidence: "high",
+            score: 0.9,
+            guardName: this.name,
+          })
+        );
       }
     }
 
@@ -43,15 +45,17 @@ export class LeakageGuard extends BaseGuard {
         const score = result.bestMatch.rating;
 
         if (score >= cfg.threshold) {
-          detections.push({
-            entityType: "PROMPT_LEAKAGE",
-            start: 0,
-            end: text.length,
-            text: text.slice(0, 200),
-            confidence: score >= 0.8 ? "high" : "medium",
-            score,
-            guardName: this.name,
-          });
+          detections.push(
+            this.makeDetection(text, {
+              entityType: "PROMPT_LEAKAGE",
+              start: 0,
+              end: text.length,
+              text: text.slice(0, 200),
+              confidence: score >= 0.8 ? "high" : "medium",
+              score,
+              guardName: this.name,
+            })
+          );
         }
       }
     }

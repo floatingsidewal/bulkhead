@@ -1,6 +1,12 @@
 /** Confidence level for a detection */
 export type Confidence = "high" | "medium" | "low";
 
+/** Which cascade layer produced this detection */
+export type DetectionSource = "regex" | "bert" | "llm";
+
+/** Whether this detection is final or needs escalation */
+export type Disposition = "confirmed" | "escalate" | "dismissed";
+
 /** A detected entity in text */
 export interface Detection {
   /** Entity type (e.g., "CREDIT_CARD", "US_SSN", "AWS_KEY") */
@@ -17,6 +23,12 @@ export interface Detection {
   score: number;
   /** Which guard produced this detection */
   guardName: string;
+  /** Which cascade layer produced this detection */
+  source: DetectionSource;
+  /** Surrounding text window for context */
+  context: string;
+  /** Whether this detection is final or needs escalation */
+  disposition: Disposition;
 }
 
 /** Result from a single guard's analysis */

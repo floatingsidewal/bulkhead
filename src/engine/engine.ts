@@ -1,9 +1,14 @@
 import type { Guard, GuardResult, EngineConfig, GuardConfig } from "../types";
+import {
+  CascadeClassifier,
+  type CascadeConfig,
+} from "../cascade/cascade";
 
 /** Orchestrates multiple guards and aggregates results */
 export class GuardrailsEngine {
   private guards: Guard[] = [];
   private config: EngineConfig;
+  private cascade: CascadeClassifier | null = null;
 
   constructor(config?: Partial<EngineConfig>) {
     this.config = {
@@ -75,11 +80,47 @@ export class GuardrailsEngine {
     return this.guards.map((g) => g.name);
   }
 
+  /** Initialize or update the cascade classifier */
+  initCascade(config?: Partial<CascadeConfig>): CascadeClassifier {
+    this.cascade = new CascadeClassifier(config);
+    for (const guard of this.guards) {
+      this.cascade.addRegexGuard(guard);
+    }
+    return this.cascade;
+  }
+
+  /** Run the full cascade (regex + BERT + optional LLM) */
+  async deepScan(text: string): Promise<GuardResult[]> {
+    if (!this.cascade) {
+      // Fall back to regex-only if cascade not initialized
+      return this.analyze(text);
+    }
+    const cascadeResult = await this.cascade.deepScan(text);
+    return [cascadeResult];
+  }
+
+  /** Run regex + BERT only (no LLM) */
+  async modelScan(text: string): Promise<GuardResult[]> {
+    if (!this.cascade) {
+      return this.analyze(text);
+    }
+    const cascadeResult = await this.cascade.modelScan(text);
+    return [cascadeResult];
+  }
+
   /** Update engine configuration */
   updateConfig(config: Partial<EngineConfig>): void {
     this.config = { ...this.config, ...config };
     if (config.guards) {
       this.config.guards = { ...this.config.guards, ...config.guards };
+    }
+  }
+
+  /** Clean up resources (terminate BERT worker, etc.) */
+  async dispose(): Promise<void> {
+    if (this.cascade) {
+      await this.cascade.dispose();
+      this.cascade = null;
     }
   }
 }

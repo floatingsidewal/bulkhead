@@ -42,15 +42,17 @@ export class SecretGuard extends BaseGuard {
             }
           }
 
-          detections.push({
-            entityType: pattern.secretType,
-            start,
-            end,
-            text: fullMatch,
-            confidence: "high",
-            score: 0.9,
-            guardName: this.name,
-          });
+          detections.push(
+            this.makeDetection(text, {
+              entityType: pattern.secretType,
+              start,
+              end,
+              text: fullMatch,
+              confidence: "high",
+              score: 0.9,
+              guardName: this.name,
+            })
+          );
         }
       }
     }

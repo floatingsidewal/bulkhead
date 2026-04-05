@@ -4,7 +4,11 @@ import type {
   GuardConfig,
   Detection,
   GuardMode,
+  DetectionSource,
+  Disposition,
 } from "../types";
+
+const CONTEXT_RADIUS = 150;
 
 const DEFAULT_CONFIG: GuardConfig = {
   enabled: true,
@@ -58,6 +62,32 @@ export abstract class BaseGuard implements Guard {
     }
 
     return result;
+  }
+
+  /** Extract surrounding context for a detection */
+  protected extractContext(
+    text: string,
+    start: number,
+    end: number
+  ): string {
+    const ctxStart = Math.max(0, start - CONTEXT_RADIUS);
+    const ctxEnd = Math.min(text.length, end + CONTEXT_RADIUS);
+    return text.slice(ctxStart, ctxEnd);
+  }
+
+  /** Create a detection with provenance fields pre-filled for regex source */
+  protected makeDetection(
+    text: string,
+    partial: Omit<Detection, "source" | "context" | "disposition">,
+    source: DetectionSource = "regex",
+    disposition: Disposition = "confirmed"
+  ): Detection {
+    return {
+      ...partial,
+      source,
+      context: this.extractContext(text, partial.start, partial.end),
+      disposition,
+    };
   }
 
   /** Replace detected text with [REDACTED-TYPE] markers */

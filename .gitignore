@@ -2,3 +2,18 @@ node_modules/
 dist/
 *.vsix
 .env
+
+# Model artifacts (downloaded or trained, not committed)
+models/*.onnx
+models/*/
+!models/.gitkeep
+
+# Training data (downloaded, not committed)
+training/data/raw/
+training/data/prepared/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/

@@ -20,7 +20,7 @@ export function activate(context: vscode.ExtensionContext): void {
   diagnosticCollection = createDiagnosticCollection();
   context.subscriptions.push(diagnosticCollection);
 
-  // Initialize engine with guards
+  // Initialize engine with guards + cascade
   engine = createEngine();
 
   // Register code action provider for all file types
@@ -35,7 +35,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // Register commands
   registerCommands(context, engine, diagnosticCollection);
 
-  // Auto-scan on document change (debounced)
+  // Auto-scan on document change (debounced) — Layer 1 only (regex, sub-ms)
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((event) => {
       const config = getConfig();
@@ -68,8 +68,8 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration("bulkhead")) {
+        engine.dispose();
         engine = createEngine();
-        // Re-scan open documents
         for (const editor of vscode.window.visibleTextEditors) {
           scanDocument(editor.document);
         }
@@ -109,11 +109,22 @@ function createEngine(): GuardrailsEngine {
     newEngine.addGuard(new LeakageGuard());
   }
 
+  // Initialize cascade for deep scan (BERT + LLM layers)
+  if (config.cascade.modelEnabled) {
+    newEngine.initCascade({
+      bertEnabled: true,
+      llmEnabled: config.guards.contentSafety.enabled,
+      escalationThreshold: config.cascade.escalationThreshold,
+      contextSentences: config.cascade.contextSentences,
+      modelId: config.cascade.modelId,
+    });
+  }
+
   return newEngine;
 }
 
+/** Auto-scan uses regex-only path (Layer 1) — always fast */
 async function scanDocument(document: vscode.TextDocument): Promise<void> {
-  // Skip non-file schemes (output panels, etc.)
   if (document.uri.scheme !== "file") return;
 
   const text = document.getText();
@@ -130,4 +141,5 @@ async function scanDocument(document: vscode.TextDocument): Promise<void> {
 
 export function deactivate(): void {
   if (debounceTimer) clearTimeout(debounceTimer);
+  engine?.dispose();
 }

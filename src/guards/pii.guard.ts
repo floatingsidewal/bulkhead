@@ -86,15 +86,17 @@ export class PiiGuard extends BaseGuard {
 
           if (score < threshold) continue;
 
-          allDetections.push({
-            entityType: pattern.entityType,
-            start,
-            end,
-            text: matchText,
-            confidence,
-            score,
-            guardName: this.name,
-          });
+          allDetections.push(
+            this.makeDetection(text, {
+              entityType: pattern.entityType,
+              start,
+              end,
+              text: matchText,
+              confidence,
+              score,
+              guardName: this.name,
+            })
+          );
         }
       }
     }

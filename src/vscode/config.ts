@@ -9,6 +9,12 @@ export interface BulkheadConfig {
     injection: { enabled: boolean };
     contentSafety: { enabled: boolean };
   };
+  cascade: {
+    escalationThreshold: number;
+    contextSentences: number;
+    modelEnabled: boolean;
+    modelId: string;
+  };
 }
 
 export function getConfig(): BulkheadConfig {
@@ -21,6 +27,15 @@ export function getConfig(): BulkheadConfig {
       secret: { enabled: cfg.get("guards.secret.enabled", true) },
       injection: { enabled: cfg.get("guards.injection.enabled", true) },
       contentSafety: { enabled: cfg.get("guards.contentSafety.enabled", false) },
+    },
+    cascade: {
+      escalationThreshold: cfg.get("cascade.escalationThreshold", 0.75),
+      contextSentences: cfg.get("cascade.contextSentences", 3),
+      modelEnabled: cfg.get("cascade.modelEnabled", false),
+      modelId: cfg.get(
+        "cascade.modelId",
+        "gravitee-io/bert-small-pii-detection"
+      ),
     },
   };
 }
