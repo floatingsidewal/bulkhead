@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createEngine, DEFAULT_CONFIG } from "@bulkhead/core";
-import type { GuardrailsEngine } from "@bulkhead/core";
+import { createEngine, DEFAULT_CONFIG } from "@floatingsidewal/bulkhead-core";
+import type { GuardrailsEngine } from "@floatingsidewal/bulkhead-core";
 import { createMcpServer } from "../src/mcp/mcp-server";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";

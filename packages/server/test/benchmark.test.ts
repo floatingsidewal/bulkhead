@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createEngine } from "@bulkhead/core";
+import { createEngine } from "@floatingsidewal/bulkhead-core";
 import { createServer } from "../src/server";
 import type { FastifyInstance } from "fastify";
 
