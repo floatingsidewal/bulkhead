@@ -20,10 +20,10 @@ jobs:
       - name: Build server
         run: cd packages/server && npx tsup
       - name: Publish @floatingsidewal/bulkhead-core
-        run: npm publish --workspace=@floatingsidewal/bulkhead-core --access public --no-git-checks || echo "Version already published, skipping"
+        run: npm publish --workspace=@floatingsidewal/bulkhead-core --no-git-checks || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish @floatingsidewal/bulkhead-server
-        run: npm publish --workspace=@floatingsidewal/bulkhead-server --access public --no-git-checks || echo "Version already published, skipping"
+        run: npm publish --workspace=@floatingsidewal/bulkhead-server --no-git-checks || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
