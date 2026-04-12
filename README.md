@@ -39,16 +39,16 @@ Then install:
 
 ```bash
 # Core library (detection engine, guards, policies)
-npm install @bulkhead-ai/core
+npm install @floatingsidewal/bulkhead-core
 
 # HTTP REST + MCP server (optional)
-npm install @bulkhead-ai/server
+npm install @floatingsidewal/bulkhead-server
 ```
 
 ### Quick Start
 
 ```typescript
-import { createEngine, getPolicy } from "@bulkhead-ai/core";
+import { createEngine, getPolicy } from "@floatingsidewal/bulkhead-core";
 
 // Create a policy-aware engine
 const engine = createEngine({
@@ -70,9 +70,9 @@ console.log(risk.issues);  // [{ category: "pii", entityType: "US_SSN", severity
 ```
 bulkhead/
   packages/
-    core/       @bulkhead-ai/core    Detection engine, guards, cascade, policies
+    core/       @floatingsidewal/bulkhead-core    Detection engine, guards, cascade, policies
     vscode/     bulkhead          VS Code extension
-    server/     @bulkhead-ai/server  HTTP REST server + MCP server
+    server/     @floatingsidewal/bulkhead-server  HTTP REST server + MCP server
   docs/                           Guides: architecture, API, policies, patterns
   Dockerfile                      Multi-stage build (HTTP + MCP modes)
   docker-compose.yml              HTTP and MCP service definitions
@@ -213,7 +213,7 @@ docker compose run --rm -i bulkhead-mcp
 ### Use as a library
 
 ```typescript
-import { GuardrailsEngine, PiiGuard, SecretGuard } from "@bulkhead-ai/core";
+import { GuardrailsEngine, PiiGuard, SecretGuard } from "@floatingsidewal/bulkhead-core";
 
 const engine = new GuardrailsEngine();
 engine.addGuard(new PiiGuard());

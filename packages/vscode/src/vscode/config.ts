@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import type { BulkheadConfig } from "@bulkhead-ai/core";
+import type { BulkheadConfig } from "@floatingsidewal/bulkhead-core";
 
 export function getConfig(): BulkheadConfig {
   const cfg = vscode.workspace.getConfiguration("bulkhead");

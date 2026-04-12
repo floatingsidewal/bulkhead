@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { GuardrailsEngine } from "@bulkhead-ai/core";
+import type { GuardrailsEngine } from "@floatingsidewal/bulkhead-core";
 
 export function registerHealthRoutes(app: FastifyInstance, engine: GuardrailsEngine): void {
   // Liveness probe — always returns 200 if the process is running
