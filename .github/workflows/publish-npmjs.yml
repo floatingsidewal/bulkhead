@@ -21,6 +21,24 @@ jobs:
       - name: Build server
         run: cd packages/server && npx tsup
 
+      # Remove any project-level .npmrc that npm ci may have created from the lockfile
+      # so npm only uses the setup-node .npmrc pointing at registry.npmjs.org
+      - name: Clean project .npmrc
+        run: rm -f .npmrc packages/core/.npmrc packages/server/.npmrc
+
+      - name: Debug .npmrc
+        run: |
+          echo "=== NPM_CONFIG_USERCONFIG ==="
+          echo $NPM_CONFIG_USERCONFIG
+          echo "=== User .npmrc ==="
+          cat $NPM_CONFIG_USERCONFIG 2>/dev/null || echo "not found"
+          echo "=== Project .npmrc ==="
+          cat .npmrc 2>/dev/null || echo "not found"
+          echo "=== npm config list ==="
+          npm config list
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Pack and publish @floatingsidewal/bulkhead-core
         run: |
           cd packages/core
