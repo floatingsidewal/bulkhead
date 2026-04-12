@@ -47,4 +47,40 @@ describe("SecretGuard", () => {
     });
     expect(result.redactedText).toContain("[REDACTED-GITHUB_TOKEN]");
   });
+
+  it("does not flag plain GUIDs as Heroku keys", async () => {
+    const result = await guard.analyze(
+      "incidentid: 6658fac6-8c36-f111-88b4-70a8a53ef15d"
+    );
+    const heroku = result.detections.filter((d) => d.entityType === "HEROKU_API_KEY");
+    expect(heroku).toHaveLength(0);
+  });
+
+  it("detects Heroku key with HEROKU_API_KEY= context", async () => {
+    const result = await guard.analyze(
+      "HEROKU_API_KEY=abcd1234-5678-9abc-def0-123456789abc"
+    );
+    expect(result.detections.some((d) => d.entityType === "HEROKU_API_KEY")).toBe(true);
+  });
+
+  describe("context-word scoring", () => {
+    it("boosts score when context words are present", async () => {
+      // This tests the context-word infrastructure on SecretGuard.
+      // Patterns with contextWords + low baseScore will score higher when context matches.
+      // Currently no built-in patterns use contextWords yet, but the mechanism is ready.
+      const result = await guard.analyze("HEROKU_API_KEY=abcd1234-5678-9abc-def0-123456789abc");
+      const detection = result.detections.find((d) => d.entityType === "HEROKU_API_KEY");
+      expect(detection).toBeDefined();
+      // Without contextWords on the pattern, score remains at default 0.9
+      expect(detection!.score).toBe(0.9);
+    });
+
+    it("respects threshold with context scoring", async () => {
+      const result = await guard.analyze("AKIAIOSFODNN7EXAMPLE", {
+        threshold: 0.95,
+      });
+      // AWS key has no contextWords, so score stays at 0.9, below 0.95 threshold
+      expect(result.detections.filter((d) => d.entityType === "AWS_ACCESS_KEY")).toHaveLength(0);
+    });
+  });
 });

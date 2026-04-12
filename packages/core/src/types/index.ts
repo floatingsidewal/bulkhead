@@ -100,6 +100,12 @@ export interface SecretPattern {
   validate?: (match: string) => boolean;
   /** Minimum entropy threshold (if applicable) */
   minEntropy?: number;
+  /** Context words that boost confidence when found nearby (e.g., ["heroku", "api_key"]) */
+  contextWords?: string[];
+  /** Base score without context boost (0-1). Defaults to 0.9 if unset. */
+  baseScore?: number;
+  /** Base confidence without context boost. Defaults to "high" if unset. */
+  baseConfidence?: Confidence;
 }
 
 /** Tactic names for detection strategies */

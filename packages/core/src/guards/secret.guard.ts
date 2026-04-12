@@ -4,9 +4,12 @@
  */
 
 import { BaseGuard } from "./base.guard";
-import type { GuardConfig, GuardResult, Detection } from "../types";
+import type { GuardConfig, GuardResult, Detection, Confidence } from "../types";
 import { ALL_SECRET_PATTERNS } from "../patterns/secrets/index";
 import { shannonEntropy } from "../validators/checksums";
+
+const CONTEXT_WINDOW = 100; // characters before/after match to search for context words
+const CONTEXT_SCORE_BOOST = 0.35;
 
 export interface SecretGuardOptions {
   /** Specific secret types to detect. If empty/undefined, all are enabled. */
@@ -58,14 +61,37 @@ export class SecretGuard extends BaseGuard {
             }
           }
 
+          // Context-aware scoring: if pattern has contextWords, start at baseScore
+          // and boost when context words are found nearby
+          let score = pattern.baseScore ?? 0.9;
+          let confidence: Confidence = pattern.baseConfidence ?? "high";
+
+          if (pattern.contextWords && pattern.contextWords.length > 0) {
+            const ctxStart = Math.max(0, start - CONTEXT_WINDOW);
+            const ctxEnd = Math.min(text.length, end + CONTEXT_WINDOW);
+            const context = text.slice(ctxStart, ctxEnd).toLowerCase();
+
+            const hasContext = pattern.contextWords.some((word) =>
+              context.includes(word.toLowerCase())
+            );
+
+            if (hasContext) {
+              score = Math.min(1, score + CONTEXT_SCORE_BOOST);
+              if (confidence === "low") confidence = "medium";
+              else if (confidence === "medium") confidence = "high";
+            }
+          }
+
+          if (score < cfg.threshold) continue;
+
           detections.push(
             this.makeDetection(text, {
               entityType: pattern.secretType,
               start,
               end,
               text: fullMatch,
-              confidence: "high",
-              score: 0.9,
+              confidence,
+              score,
               guardName: this.name,
             })
           );
