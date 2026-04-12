@@ -1,18 +1,18 @@
-# @floatingsidewal/bulkhead-server
+# Bulkhead Server
 
 HTTP REST and MCP server for the [Bulkhead](https://github.com/floatingsidewal/bulkhead) content protection engine.
 
 ## Install
 
-
-```
-```
-
-Then install:
+This package is available under two scopes:
 
 ```bash
+npm install @bulkhead-ai/server
+# or
 npm install @floatingsidewal/bulkhead-server
 ```
+
+Both packages are identical. Use whichever scope fits your project.
 
 ## MCP Server
 
@@ -32,13 +32,14 @@ Add to your project's `.mcp.json`:
 {
   "mcpServers": {
     "bulkhead": {
-      "command": "bulkhead-mcp"
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "ghcr.io/floatingsidewal/bulkhead:latest", "packages/server/dist/mcp/index.js"]
     }
   }
 }
 ```
 
-Or run directly:
+Or if installed via npm:
 
 ```bash
 npx bulkhead-mcp
@@ -93,10 +94,10 @@ curl -X POST http://localhost:3000/v1/scan \
 
 ```bash
 # HTTP mode
-docker run -p 3000:3000 bulkhead
+docker run -p 3000:3000 ghcr.io/floatingsidewal/bulkhead:latest
 
 # MCP mode (stdio)
-docker run -i bulkhead packages/server/dist/mcp/index.js
+docker run --rm -i ghcr.io/floatingsidewal/bulkhead:latest packages/server/dist/mcp/index.js
 ```
 
 See the [deployment guide](https://github.com/floatingsidewal/bulkhead/tree/develop/docs/deployment.md) for Docker configuration details.
