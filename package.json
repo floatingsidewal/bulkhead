@@ -1,6 +1,6 @@
 {
   "name": "bulkhead",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "license": "MIT",
   "workspaces": [
@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "npm run build --workspaces",
-    "test": "npm run test -w @floatingsidewal/bulkhead-core && npm run test -w @floatingsidewal/bulkhead-server",
+    "test": "npm run test -w @bulkhead-ai/core && npm run test -w @bulkhead-ai/server",
     "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {
