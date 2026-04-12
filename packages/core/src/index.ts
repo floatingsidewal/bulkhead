@@ -7,16 +7,15 @@ import { PiiGuard } from "./guards/pii.guard";
 import { SecretGuard } from "./guards/secret.guard";
 import { InjectionGuard } from "./guards/injection.guard";
 import { LeakageGuard } from "./guards/leakage.guard";
+import { TestDataGuard } from "./guards/testdata.guard";
 export { BaseGuard } from "./guards/base.guard";
 export { PiiGuard } from "./guards/pii.guard";
+export type { PiiGuardOptions } from "./guards/pii.guard";
 export { SecretGuard } from "./guards/secret.guard";
+export type { SecretGuardOptions } from "./guards/secret.guard";
 export { InjectionGuard } from "./guards/injection.guard";
 export { LeakageGuard } from "./guards/leakage.guard";
-
-// Cascade
-export { CascadeClassifier } from "./cascade/cascade";
-export { BertLayer } from "./cascade/bert-layer";
-export { LlmLayer } from "./cascade/llm-layer";
+export { TestDataGuard } from "./guards/testdata.guard";
 
 // Types
 export type {
@@ -36,9 +35,32 @@ export type {
   Tactic,
 } from "./types";
 
+// Cascade types re-exported for config convenience
 export type { CascadeConfig } from "./cascade/cascade";
 export type { BertLayerConfig } from "./cascade/bert-layer";
 export type { LlmProvider, LlmLayerConfig } from "./cascade/llm-layer";
+
+// Policy system
+export {
+  BUILTIN_POLICIES,
+  getPolicy,
+  resolvePolicy,
+  policyToEngineConfig,
+  assessRisk,
+} from "./policy";
+export type {
+  RiskLevel,
+  GuardPolicyConfig,
+  RiskThresholds,
+  PolicyDefinition,
+  RiskAssessment,
+  ClassifiedIssue,
+  TestDataFlag,
+} from "./policy";
+
+// Policy-aware engine creation
+import { resolveRef, resolvePolicy, policyToEngineConfig } from "./policy";
+import type { PolicyDefinition } from "./policy";
 
 // Platform-neutral config interface
 export interface BulkheadConfig {
@@ -56,6 +78,10 @@ export interface BulkheadConfig {
     modelEnabled: boolean;
     modelId: string;
   };
+  /** Named policy or custom PolicyDefinition. Overrides guard-level config. */
+  policy?: string | PolicyDefinition;
+  /** Additional policy overlays for composition */
+  policyOverlays?: (string | PolicyDefinition)[];
 }
 
 export const DEFAULT_CONFIG: BulkheadConfig = {
@@ -79,15 +105,42 @@ export const DEFAULT_CONFIG: BulkheadConfig = {
 export function createEngine(config: BulkheadConfig = DEFAULT_CONFIG): GuardrailsEngine {
   const engine = new GuardrailsEngine();
 
-  if (config.guards.pii.enabled) {
-    engine.addGuard(new PiiGuard());
-  }
-  if (config.guards.secret.enabled) {
-    engine.addGuard(new SecretGuard());
-  }
-  if (config.guards.injection.enabled) {
-    engine.addGuard(new InjectionGuard());
-    engine.addGuard(new LeakageGuard());
+  // If a policy is specified, resolve it and derive guard options
+  if (config.policy) {
+    let policy = resolveRef(config.policy);
+    if (config.policyOverlays && config.policyOverlays.length > 0) {
+      policy = resolvePolicy(policy, ...config.policyOverlays);
+    }
+
+    const { piiOptions, secretOptions, guardConfigs } = policyToEngineConfig(policy);
+
+    if (policy.guards.pii?.enabled !== false) {
+      engine.addGuard(new PiiGuard(piiOptions));
+    }
+    if (policy.guards.secret?.enabled !== false) {
+      engine.addGuard(new SecretGuard(secretOptions));
+    }
+    if (policy.guards.injection?.enabled !== false) {
+      engine.addGuard(new InjectionGuard());
+      engine.addGuard(new LeakageGuard());
+    }
+    if (policy.testDataDetection !== "ignore") {
+      engine.addGuard(new TestDataGuard());
+    }
+
+    engine.updateConfig({ guards: guardConfigs });
+  } else {
+    // Legacy path: use config.guards directly
+    if (config.guards.pii.enabled) {
+      engine.addGuard(new PiiGuard());
+    }
+    if (config.guards.secret.enabled) {
+      engine.addGuard(new SecretGuard());
+    }
+    if (config.guards.injection.enabled) {
+      engine.addGuard(new InjectionGuard());
+      engine.addGuard(new LeakageGuard());
+    }
   }
 
   if (config.cascade.modelEnabled) {

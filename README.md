@@ -7,9 +7,10 @@ Bulkhead detects and redacts sensitive content -- PII, secrets, prompt injection
 | | |
 |---|---|
 | **Deployment** | VS Code extension, HTTP REST server, MCP server, Docker |
-| **Detection** | 154 secret patterns across 13 categories, 45+ PII entity types across 20+ countries, prompt injection, system prompt leakage |
+| **Detection** | 154 secret patterns across 13 categories, 45+ PII entity types across 20+ countries, prompt injection, system prompt leakage, test data detection |
 | **Architecture** | Three-layer cascading classifier (regex, BERT, LLM) |
-| **Tests** | 125 tests including adversarial suite and performance benchmarks |
+| **Policy** | Named policies (strict, moderate), composable compliance overlays, risk assessment with classified issues |
+| **Tests** | 185 tests including adversarial suite, policy system, and performance benchmarks |
 
 ## What Makes Bulkhead Different
 
@@ -28,14 +29,53 @@ Every time you use an AI coding assistant, your editor content gets sent to an L
 
 Bulkhead sits between your code and the AI, catching sensitive content before it leaves.
 
-## Monorepo Structure
+## Install
+
+Packages are published to [GitHub Packages](https://github.com/floatingsidewal/bulkhead/packages). Add the registry to your `.npmrc`:
+
+```
+@bulkhead:registry=https://npm.pkg.github.com
+```
+
+Then install:
+
+```bash
+# Core library (detection engine, guards, policies)
+npm install @bulkhead/core
+
+# HTTP REST + MCP server (optional)
+npm install @bulkhead/server
+```
+
+### Quick Start
+
+```typescript
+import { createEngine, getPolicy } from "@bulkhead/core";
+
+// Create a policy-aware engine
+const engine = createEngine({
+  enabled: true, debounceMs: 500,
+  guards: { pii: { enabled: true }, secret: { enabled: true }, injection: { enabled: true }, contentSafety: { enabled: false } },
+  cascade: { escalationThreshold: 0.75, contextSentences: 3, modelEnabled: false, modelId: "Xenova/bert-base-NER" },
+  policy: "strict",
+});
+
+// Scan with risk assessment
+const policy = getPolicy("strict");
+const { risk } = await engine.policyScan("My SSN is 123-45-6789", policy);
+console.log(risk.level);  // "high"
+console.log(risk.issues);  // [{ category: "pii", entityType: "US_SSN", severity: "high", isTestData: true, ... }]
+```
+
+## Project Structure
 
 ```
 bulkhead/
   packages/
-    core/       @bulkhead/core    Detection engine, guards, cascade, patterns
+    core/       @bulkhead/core    Detection engine, guards, cascade, policies
     vscode/     bulkhead          VS Code extension
     server/     @bulkhead/server  HTTP REST server + MCP server
+  docs/                           Guides: architecture, API, policies, patterns
   Dockerfile                      Multi-stage build (HTTP + MCP modes)
   docker-compose.yml              HTTP and MCP service definitions
 ```
@@ -234,12 +274,13 @@ The test suite includes an [adversarial test suite](test/adversarial/) covering 
 ## Documentation
 
 - [Architecture](docs/architecture.md) -- Cascading classifier design, component map, entry points
+- [Policy Guide](docs/policy.md) -- Policies, risk assessment, test data detection, compliance overlays
 - [Deployment](docs/deployment.md) -- Five deployment scenarios with configuration and examples
 - [API Reference](docs/api.md) -- HTTP endpoints, MCP tools, environment variables
 - [Guards](docs/guards.md) -- Guard implementation details
 - [Patterns](docs/patterns.md) -- Detection pattern reference
 - [Testing](docs/testing.md) -- Test strategy and adversarial suite
-- [How-To](docs/how-to.md) -- Usage guides
+- [How-To](docs/how-to.md) -- Usage guides and library integration
 
 ## Attribution
 
