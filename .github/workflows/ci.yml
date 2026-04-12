@@ -62,12 +62,12 @@ jobs:
       # Publish to GitHub Packages (public, no PAT needed for consumers)
       - name: Publish @floatingsidewal/bulkhead-core
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: npm publish --workspace=@floatingsidewal/bulkhead-core --access public --no-git-checks || echo "Version already published, skipping"
+        run: npm publish --workspace=@floatingsidewal/bulkhead-core --no-git-checks || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish @floatingsidewal/bulkhead-server
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: npm publish --workspace=@floatingsidewal/bulkhead-server --access public --no-git-checks || echo "Version already published, skipping"
+        run: npm publish --workspace=@floatingsidewal/bulkhead-server --no-git-checks || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
