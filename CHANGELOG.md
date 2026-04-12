@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [VERSIONING.md](VERSIONING.md) for version numbering conventions.
 
+## [0.5.2] - 2026-04-12
+
+### Fixed
+- Split bare 9-digit SSN pattern into separate low-confidence entry (baseScore 0.15) so option-set codes, status codes, and other 9-digit numbers don't false-positive as US_SSN without context words nearby
+
 ## [0.5.1] - 2026-04-12
 
 ### Added

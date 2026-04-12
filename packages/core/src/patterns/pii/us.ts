@@ -17,13 +17,23 @@ export const US_SSN: PiiPattern = {
   patterns: [
     // SSN with delimiters (medium confidence)
     /\b(\d{3})[- .](\d{2})[- .](\d{4})\b/g,
-    // SSN without delimiters (very weak — needs context)
-    /\b\d{9}\b/g,
   ],
   validate: validateSsn,
   contextWords: ["social", "security", "ssn", "ssns", "ssid"],
   baseConfidence: "medium",
   baseScore: 0.5,
+};
+
+/** Bare 9-digit number — only meaningful with SSN context words nearby */
+export const US_SSN_BARE: PiiPattern = {
+  entityType: "US_SSN",
+  patterns: [
+    /\b\d{9}\b/g,
+  ],
+  validate: validateSsn,
+  contextWords: ["social", "security", "ssn", "ssns", "ssid"],
+  baseConfidence: "low",
+  baseScore: 0.15,
 };
 
 export const US_DRIVER_LICENSE: PiiPattern = {
@@ -189,6 +199,7 @@ export const MEDICAL_LICENSE: PiiPattern = {
 /** All US-specific PII patterns */
 export const US_PATTERNS: PiiPattern[] = [
   US_SSN,
+  US_SSN_BARE,
   US_DRIVER_LICENSE,
   US_PASSPORT,
   US_BANK_NUMBER,
