@@ -21,18 +21,20 @@ jobs:
       - name: Build server
         run: cd packages/server && npx tsup
 
-      - name: Publish @floatingsidewal/bulkhead-core
-        working-directory: packages/core
+      - name: Pack and publish @floatingsidewal/bulkhead-core
         run: |
+          cd packages/core
           node -e "const p=require('./package.json'); delete p.publishConfig.registry; require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
-          npm publish --access public || echo "Version already published, skipping"
+          TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
+          npm publish "$TARBALL" --access public || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish @floatingsidewal/bulkhead-server
-        working-directory: packages/server
+      - name: Pack and publish @floatingsidewal/bulkhead-server
         run: |
+          cd packages/server
           node -e "const p=require('./package.json'); delete p.publishConfig.registry; require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
-          npm publish --access public || echo "Version already published, skipping"
+          TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
+          npm publish "$TARBALL" --access public || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
