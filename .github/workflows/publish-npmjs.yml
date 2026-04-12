@@ -17,8 +17,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '20.x'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@bulkhead-ai'
+          # No registry-url or scope — trusted publishing uses OIDC, not tokens
+      - run: npm install -g npm@latest
       - run: npm ci
       - name: Build core
         run: cd packages/core && npx tsup
@@ -40,8 +40,6 @@ jobs:
           "
           TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
           npm publish "$TARBALL" --access public --provenance || echo "Version already published, skipping"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @bulkhead-ai/server
         run: |
@@ -56,5 +54,3 @@ jobs:
           "
           TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
           npm publish "$TARBALL" --access public --provenance || echo "Version already published, skipping"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
