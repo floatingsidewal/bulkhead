@@ -2,6 +2,10 @@ node_modules/
 dist/
 *.vsix
 .env
+.DS_Store
+
+# npm auth — consumers need their own .npmrc, don't ship ours
+.npmrc
 
 # Model artifacts (downloaded or trained, not committed)
 models/*.onnx
@@ -17,3 +21,8 @@ __pycache__/
 *.pyc
 *.egg-info/
 .venv/
+
+# IDE
+.idea/
+*.swp
+*.swo
