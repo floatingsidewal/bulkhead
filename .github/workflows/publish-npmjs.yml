@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
     branches: [main]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   publish:
     name: Build & Publish to npmjs.org
@@ -21,38 +25,56 @@ jobs:
       - name: Build server
         run: cd packages/server && npx tsup
 
-      # Remove any project-level .npmrc that npm ci may have created from the lockfile
-      # so npm only uses the setup-node .npmrc pointing at registry.npmjs.org
+      # Clean any project-level .npmrc that npm ci may create from the lockfile
       - name: Clean project .npmrc
         run: rm -f .npmrc packages/core/.npmrc packages/server/.npmrc
 
-      - name: Debug .npmrc
-        run: |
-          echo "=== NPM_CONFIG_USERCONFIG ==="
-          echo $NPM_CONFIG_USERCONFIG
-          echo "=== User .npmrc ==="
-          cat $NPM_CONFIG_USERCONFIG 2>/dev/null || echo "not found"
-          echo "=== Project .npmrc ==="
-          cat .npmrc 2>/dev/null || echo "not found"
-          echo "=== npm config list ==="
-          npm config list
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Pack and publish @floatingsidewal/bulkhead-core
+      # --- Publish as @floatingsidewal ---
+      - name: Publish @floatingsidewal/bulkhead-core
         run: |
           cd packages/core
           node -e "const p=require('./package.json'); delete p.publishConfig.registry; require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
           TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
-          npm publish "$TARBALL" --access public || echo "Version already published, skipping"
+          npm publish "$TARBALL" --access public --provenance || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Pack and publish @floatingsidewal/bulkhead-server
+      - name: Publish @floatingsidewal/bulkhead-server
         run: |
           cd packages/server
           node -e "const p=require('./package.json'); delete p.publishConfig.registry; require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
           TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
-          npm publish "$TARBALL" --access public || echo "Version already published, skipping"
+          npm publish "$TARBALL" --access public --provenance || echo "Version already published, skipping"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # --- Publish as @bulkhead-ai ---
+      - name: Publish @bulkhead-ai/core
+        run: |
+          cd packages/core
+          node -e "
+            const p=require('./package.json');
+            p.name='@bulkhead-ai/core';
+            delete p.publishConfig.registry;
+            require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
+          "
+          TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
+          npm publish "$TARBALL" --access public --provenance || echo "Version already published, skipping"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @bulkhead-ai/server
+        run: |
+          cd packages/server
+          node -e "
+            const p=require('./package.json');
+            p.name='@bulkhead-ai/server';
+            p.dependencies['@bulkhead-ai/core']=p.dependencies['@floatingsidewal/bulkhead-core'];
+            delete p.dependencies['@floatingsidewal/bulkhead-core'];
+            delete p.publishConfig.registry;
+            require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
+          "
+          TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
+          npm publish "$TARBALL" --access public --provenance || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
