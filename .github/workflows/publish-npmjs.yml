@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
-          scope: '@floatingsidewal'
+          scope: '@bulkhead-ai'
       - run: npm ci
       - name: Build core
         run: cd packages/core && npx tsup
@@ -29,26 +29,6 @@ jobs:
       - name: Clean project .npmrc
         run: rm -f .npmrc packages/core/.npmrc packages/server/.npmrc
 
-      # --- Publish as @floatingsidewal ---
-      - name: Publish @floatingsidewal/bulkhead-core
-        run: |
-          cd packages/core
-          node -e "const p=require('./package.json'); delete p.publishConfig.registry; require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
-          TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
-          npm publish "$TARBALL" --access public --provenance || echo "Version already published, skipping"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish @floatingsidewal/bulkhead-server
-        run: |
-          cd packages/server
-          node -e "const p=require('./package.json'); delete p.publishConfig.registry; require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
-          TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
-          npm publish "$TARBALL" --access public --provenance || echo "Version already published, skipping"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      # --- Publish as @bulkhead-ai ---
       - name: Publish @bulkhead-ai/core
         run: |
           cd packages/core
