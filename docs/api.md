@@ -220,7 +220,7 @@ Server metadata. Returns version and active guard names.
 ```json
 {
   "name": "bulkhead",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "guards": ["PiiGuard", "SecretGuard", "InjectionGuard", "LeakageGuard"]
 }
 ```
@@ -401,7 +401,7 @@ Enable or disable specific guards at runtime. Returns the current guard configur
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `BULKHEAD_CASCADE_MODEL_ENABLED` | `false` | Enable BERT model for Layer 2 |
-| `BULKHEAD_CASCADE_MODEL_ID` | `gravitee-io/bert-small-pii-detection` | HuggingFace model ID for BERT |
+| `BULKHEAD_CASCADE_MODEL_ID` | `Xenova/bert-base-NER` | HuggingFace model ID for BERT |
 | `BULKHEAD_CASCADE_ESCALATION_THRESHOLD` | `0.75` | BERT confidence threshold. Below this, detections escalate to LLM |
 | `BULKHEAD_CASCADE_CONTEXT_SENTENCES` | `3` | Sentences of context sent to LLM for disambiguation |
 
