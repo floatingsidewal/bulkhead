@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [VERSIONING.md](VERSIONING.md) for version numbering conventions.
 
+## [0.5.1] - 2026-04-12
+
+### Added
+- Sentinel-year date detection in TestDataGuard: dates with year < 1900 or > 2100 flagged as `TEST_DATA_DATE`
+- Use `0001-04-12T16:29:43Z` style dates in eval data to mark them as synthetic while keeping them parseable
+
 ## [0.5.0] - 2026-04-12
 
 ### Fixed

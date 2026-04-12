@@ -1,6 +1,6 @@
 {
   "name": "@floatingsidewal/bulkhead-server",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Bulkhead guardrails HTTP REST and MCP server",
   "license": "MIT",
   "repository": {
@@ -43,7 +43,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@floatingsidewal/bulkhead-core": "0.5.0",
+    "@floatingsidewal/bulkhead-core": "0.5.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "fastify": "^5.0.0"
   },
