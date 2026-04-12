@@ -21,18 +21,18 @@ jobs:
       - name: Build server
         run: cd packages/server && npx tsup
 
-      # Override publishConfig.registry so npm publishes to npmjs.org instead of GitHub Packages
-      - name: Patch publishConfig for npmjs.org
-        run: |
-          for pkg in packages/core/package.json packages/server/package.json; do
-            node -e "const p=require('./$pkg'); p.publishConfig={access:'public'}; require('fs').writeFileSync('$pkg',JSON.stringify(p,null,2)+'\n')"
-          done
-
       - name: Publish @floatingsidewal/bulkhead-core
-        run: npm publish --workspace=@floatingsidewal/bulkhead-core --no-git-checks || echo "Version already published, skipping"
+        working-directory: packages/core
+        run: |
+          node -e "const p=require('./package.json'); delete p.publishConfig.registry; require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
+          npm publish --access public || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Publish @floatingsidewal/bulkhead-server
-        run: npm publish --workspace=@floatingsidewal/bulkhead-server --no-git-checks || echo "Version already published, skipping"
+        working-directory: packages/server
+        run: |
+          node -e "const p=require('./package.json'); delete p.publishConfig.registry; require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
+          npm publish --access public || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
