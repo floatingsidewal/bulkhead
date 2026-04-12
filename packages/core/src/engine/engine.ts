@@ -3,6 +3,8 @@ import {
   CascadeClassifier,
   type CascadeConfig,
 } from "../cascade/cascade";
+import type { PolicyDefinition, RiskAssessment } from "../policy/types";
+import { assessRisk } from "../policy/risk";
 
 /** Orchestrates multiple guards and aggregates results */
 export class GuardrailsEngine {
@@ -120,6 +122,21 @@ export class GuardrailsEngine {
     if (config.guards) {
       this.config.guards = { ...this.config.guards, ...config.guards };
     }
+  }
+
+  /** Run all guards and return risk assessment alongside results */
+  async policyScan(
+    text: string,
+    policy: PolicyDefinition
+  ): Promise<{
+    passed: boolean;
+    risk: RiskAssessment;
+    results: GuardResult[];
+    redactedText?: string;
+  }> {
+    const { passed, results, redactedText } = await this.scan(text);
+    const risk = assessRisk(results, policy);
+    return { passed, risk, results, redactedText };
   }
 
   /** Clean up resources (terminate BERT worker, etc.) */

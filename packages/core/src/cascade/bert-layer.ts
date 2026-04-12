@@ -41,14 +41,15 @@ export class BertLayer {
 
   /** Resolve the worker path — supports both compiled .js and source .ts */
   private resolveWorkerPath(): string {
-    const jsPath = resolve(__dirname, "bert-worker.js");
-    if (existsSync(jsPath)) return jsPath;
+    // Compiled: dist/cascade/bert-worker.js (built as separate tsup entry)
+    const compiledPath = resolve(__dirname, "cascade", "bert-worker.js");
+    if (existsSync(compiledPath)) return compiledPath;
 
     // Dev/test mode: use TypeScript source with tsx loader
     const tsPath = resolve(__dirname, "bert-worker.ts");
     if (existsSync(tsPath)) return tsPath;
 
-    return jsPath; // Fall back to .js (will error if missing)
+    return compiledPath; // Fall back to compiled path (will error if missing)
   }
 
   /** Ensure the worker thread is running */
