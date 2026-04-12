@@ -1,6 +1,6 @@
 {
   "name": "@floatingsidewal/bulkhead-core",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Cascading content protection engine — PII detection, secret scanning, prompt injection defense",
   "license": "MIT",
   "repository": {
