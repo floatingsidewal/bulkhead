@@ -1,7 +1,3 @@
-[![CI](https://github.com/floatingsidewal/bulkhead/actions/workflows/ci.yml/badge.svg)](https://github.com/floatingsidewal/bulkhead/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@bulkhead-ai/core)](https://www.npmjs.com/package/@bulkhead-ai/core)
-[![license](https://img.shields.io/npm/l/@floatingsidewal/bulkhead-core)](./LICENSE)
-
 # Bulkhead
 
 **Cascading content protection for AI-powered development tools.**
