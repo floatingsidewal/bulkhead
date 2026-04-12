@@ -1,69 +1,23 @@
 # Deployment Guide
 
-Bulkhead supports multiple deployment scenarios. Each uses the same `@floatingsidewal/bulkhead-core` detection engine with different transport layers.
+Bulkhead supports multiple deployment scenarios. Each uses the same detection engine with different transport layers.
 
 ## Consuming from Another Project
 
-The fastest way to use Bulkhead from another project. Choose npm for library integration or Docker for MCP/HTTP server usage.
+Choose npm for library integration or Docker for MCP/HTTP server usage. See the [How-To Guide](how-to.md) for comprehensive code examples.
 
 ### npm (Library)
 
-
+```bash
+npm install @bulkhead-ai/core
 ```
-```
 
-Install:
+Also available as `@floatingsidewal/bulkhead-core` via [GitHub Packages](https://github.com/floatingsidewal/bulkhead/packages).
+
+For the HTTP/MCP server:
 
 ```bash
-npm install @floatingsidewal/bulkhead-core
-```
-
-Use in your code:
-
-```typescript
-import { createEngine, getPolicy } from "@floatingsidewal/bulkhead-core";
-
-// Simple scan (no policy)
-const engine = createEngine();
-const { passed, results } = await engine.scan("My SSN is 123-45-6789");
-
-// Policy scan with risk assessment and test data detection
-const policyEngine = createEngine({
-  enabled: true,
-  debounceMs: 500,
-  guards: {
-    pii: { enabled: true },
-    secret: { enabled: true },
-    injection: { enabled: true },
-    contentSafety: { enabled: false },
-  },
-  cascade: {
-    escalationThreshold: 0.75,
-    contextSentences: 3,
-    modelEnabled: false,
-    modelId: "Xenova/bert-base-NER",
-  },
-  policy: "strict",
-});
-
-const policy = getPolicy("strict");
-const { risk } = await policyEngine.policyScan(JSON.stringify(myData), policy);
-console.log(risk.level);        // "critical" | "high" | "medium" | "low" | "none"
-console.log(risk.issues);       // classified issues by category
-console.log(risk.testDataFlags); // synthetic/eval data detected
-```
-
-For the HTTP/MCP server package:
-
-```bash
-npm install @floatingsidewal/bulkhead-server
-```
-
-Then run as an MCP server or HTTP server:
-
-```bash
-npx bulkhead-mcp    # MCP over stdio
-npx bulkhead-server # HTTP on port 3000
+npm install @bulkhead-ai/server
 ```
 
 ### Docker Container (MCP Server)
@@ -304,7 +258,7 @@ Add `.mcp.json` to your project root. Use the published container (no local inst
 }
 ```
 
-Or if you have `@floatingsidewal/bulkhead-server` installed via npm:
+Or if you have `@bulkhead-ai/server` installed via npm:
 
 ```json
 {
