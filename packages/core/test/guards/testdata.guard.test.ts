@@ -110,4 +110,61 @@ describe("TestDataGuard", () => {
     );
     expect(result.detections).toHaveLength(0);
   });
+
+  describe("sentinel-year dates", () => {
+    it("detects year 0001 as test data", async () => {
+      const result = await guard.analyze("created: 0001-04-12T16:29:43Z");
+      expect(result.detections).toHaveLength(1);
+      expect(result.detections[0].entityType).toBe("TEST_DATA_DATE");
+      expect(result.detections[0].text).toBe("0001-04-12T16:29:43Z");
+    });
+
+    it("detects year 9999 as test data", async () => {
+      const result = await guard.analyze("expires: 9999-12-31T23:59:59Z");
+      expect(result.detections).toHaveLength(1);
+      expect(result.detections[0].entityType).toBe("TEST_DATA_DATE");
+    });
+
+    it("detects year 1899 as test data", async () => {
+      const result = await guard.analyze("date: 1899-01-01");
+      expect(result.detections).toHaveLength(1);
+      expect(result.detections[0].entityType).toBe("TEST_DATA_DATE");
+    });
+
+    it("detects year 2101 as test data", async () => {
+      const result = await guard.analyze("date: 2101-06-15T10:00:00Z");
+      expect(result.detections).toHaveLength(1);
+      expect(result.detections[0].entityType).toBe("TEST_DATA_DATE");
+    });
+
+    it("detects date with milliseconds", async () => {
+      const result = await guard.analyze("ts: 0001-01-01T00:00:00.000Z");
+      expect(result.detections).toHaveLength(1);
+      expect(result.detections[0].entityType).toBe("TEST_DATA_DATE");
+    });
+
+    it("does not flag year 2026 as test data", async () => {
+      const result = await guard.analyze("created: 2026-04-12T16:29:43Z");
+      const dates = result.detections.filter(
+        (d) => d.entityType === "TEST_DATA_DATE"
+      );
+      expect(dates).toHaveLength(0);
+    });
+
+    it("does not flag year 1990 as test data", async () => {
+      const result = await guard.analyze("born: 1990-05-15");
+      const dates = result.detections.filter(
+        (d) => d.entityType === "TEST_DATA_DATE"
+      );
+      expect(dates).toHaveLength(0);
+    });
+
+    it("does not flag year 1900 (boundary) as test data", async () => {
+      const result = await guard.analyze("date: 1900-01-01");
+      const dates = result.detections.filter(
+        (d) => d.entityType === "TEST_DATA_DATE"
+      );
+      expect(dates).toHaveLength(0);
+    });
+  });
 });

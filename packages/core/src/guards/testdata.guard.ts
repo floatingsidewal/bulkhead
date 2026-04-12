@@ -137,6 +137,31 @@ export class TestDataGuard extends BaseGuard {
       }
     }
 
+    // Sentinel-year date detection: years < 1900 or > 2100 are test data
+    const dateRe = /\b(\d{4})-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)?\b/g;
+    let dateMatch: RegExpExecArray | null;
+    while ((dateMatch = dateRe.exec(text)) !== null) {
+      const year = parseInt(dateMatch[1], 10);
+      if (year < 1900 || year > 2100) {
+        detections.push(
+          this.makeDetection(
+            text,
+            {
+              entityType: "TEST_DATA_DATE",
+              start: dateMatch.index,
+              end: dateMatch.index + dateMatch[0].length,
+              text: dateMatch[0],
+              confidence: "high",
+              score: 0.95,
+              guardName: this.name,
+            },
+            "regex",
+            "informational"
+          )
+        );
+      }
+    }
+
     // Deduplicate overlapping detections
     const deduped = this.deduplicateDetections(detections);
     return this.buildInformationalResult(text, deduped);
