@@ -2,6 +2,7 @@ name: Publish to npmjs.org
 
 on:
   workflow_dispatch:
+    branches: [main]
 
 jobs:
   publish:
