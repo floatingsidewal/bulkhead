@@ -3,7 +3,7 @@
 ## Running Tests
 
 ```bash
-npm test              # Run all tests (107 tests across 6 files)
+npm test              # Run all tests (185+ tests across 13 files)
 npm run test:watch    # Watch mode — re-runs on file change
 npm run lint          # Type-check without emitting
 ```
@@ -11,16 +11,27 @@ npm run lint          # Type-check without emitting
 ## Test Structure
 
 ```
-test/
+packages/core/test/
 ├── guards/
 │   ├── pii.guard.test.ts         PII detection (10 tests)
 │   ├── secret.guard.test.ts      Secret detection (7 tests)
 │   ├── injection.guard.test.ts   Injection + leakage (7 tests)
-│   └── engine.test.ts            Engine orchestration (4 tests)
+│   ├── engine.test.ts            Engine orchestration (4 tests)
+│   └── testdata.guard.test.ts    Test data detection (13 tests)
 ├── cascade/
-│   └── cascade.test.ts           Cascade classifier + LLM layer (9 tests)
-└── adversarial/
-    └── adversarial.test.ts       Edge cases & evasion (70 tests)
+│   ├── cascade.test.ts           Cascade classifier + LLM layer (9 tests)
+│   └── bert-integration.test.ts  BERT model integration (5 tests)
+├── policy/
+│   └── policy.test.ts            Policy system + risk assessment (13 tests)
+├── adversarial/
+│   └── adversarial.test.ts       Edge cases & evasion (70 tests)
+└── perf/
+    └── perf.test.ts              Performance benchmarks (18 tests)
+
+packages/server/test/
+├── http.test.ts                  HTTP REST endpoints (18 tests)
+├── mcp.test.ts                   MCP tools (9 tests)
+└── benchmark.test.ts             Server throughput (2 tests)
 ```
 
 ## Test Categories

@@ -22,7 +22,7 @@ Balanced defaults. Higher thresholds reduce false positives. Redacts rather than
 ### With createEngine
 
 ```typescript
-import { createEngine, getPolicy } from "@floatingsidewal/bulkhead-core";
+import { createEngine, getPolicy } from "@bulkhead-ai/core";
 
 const engine = createEngine({
   enabled: true,
@@ -151,7 +151,7 @@ The `testDataDetection` field on a policy controls behavior:
 Policies can be composed with overlays for compliance or domain-specific tuning:
 
 ```typescript
-import { resolvePolicy } from "@floatingsidewal/bulkhead-core";
+import { resolvePolicy } from "@bulkhead-ai/core";
 
 // Start with strict, narrow to PCI-relevant entity types
 const pciOverlay: PolicyDefinition = {
@@ -184,8 +184,8 @@ const resolved = resolvePolicy("strict", pciOverlay);
 ## Example: Scanning a Support Ticket
 
 ```typescript
-import { createEngine, getPolicy } from "@floatingsidewal/bulkhead-core";
-import type { RiskAssessment } from "@floatingsidewal/bulkhead-core";
+import { createEngine, getPolicy } from "@bulkhead-ai/core";
+import type { RiskAssessment } from "@bulkhead-ai/core";
 
 const engine = createEngine({
   enabled: true,
@@ -242,7 +242,7 @@ if (risk.testDataFlags.length > 0) {
 Define your own policy to match your domain:
 
 ```typescript
-import type { PolicyDefinition } from "@floatingsidewal/bulkhead-core";
+import type { PolicyDefinition } from "@bulkhead-ai/core";
 
 const myPolicy: PolicyDefinition = {
   name: "support-conductor",
