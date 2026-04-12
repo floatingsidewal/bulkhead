@@ -1,4 +1,4 @@
-import type { LlmProvider } from "@floatingsidewal/bulkhead-core";
+import type { LlmProvider } from "@bulkhead-ai/core";
 import type { ServerConfig } from "./config";
 
 const DEFAULT_TIMEOUT_MS = 10_000;

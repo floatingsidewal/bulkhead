@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Bulkhead supports multiple deployment scenarios. Each uses the same `@floatingsidewal/bulkhead-core` detection engine with different transport layers.
+Bulkhead supports multiple deployment scenarios. Each uses the same `@bulkhead-ai/core` detection engine with different transport layers.
 
 ## Consuming from Another Project
 
@@ -8,22 +8,20 @@ The fastest way to use Bulkhead from another project. Choose npm for library int
 
 ### npm (Library)
 
-Add the GitHub Packages registry to your project's `.npmrc`:
 
 ```
-@floatingsidewal:registry=https://npm.pkg.github.com
 ```
 
 Install:
 
 ```bash
-npm install @floatingsidewal/bulkhead-core
+npm install @bulkhead-ai/core
 ```
 
 Use in your code:
 
 ```typescript
-import { createEngine, getPolicy } from "@floatingsidewal/bulkhead-core";
+import { createEngine, getPolicy } from "@bulkhead-ai/core";
 
 // Simple scan (no policy)
 const engine = createEngine();
@@ -58,7 +56,7 @@ console.log(risk.testDataFlags); // synthetic/eval data detected
 For the HTTP/MCP server package:
 
 ```bash
-npm install @floatingsidewal/bulkhead-server
+npm install @bulkhead-ai/server
 ```
 
 Then run as an MCP server or HTTP server:
@@ -306,7 +304,7 @@ Add `.mcp.json` to your project root. Use the published container (no local inst
 }
 ```
 
-Or if you have `@floatingsidewal/bulkhead-server` installed via npm:
+Or if you have `@bulkhead-ai/server` installed via npm:
 
 ```json
 {
