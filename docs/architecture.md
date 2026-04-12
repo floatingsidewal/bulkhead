@@ -17,9 +17,9 @@ Bulkhead is organized as an npm workspace monorepo with three packages:
 ```
 bulkhead/
   packages/
-    core/       @floatingsidewal/bulkhead-core      Detection engine, guards, cascade, patterns
+    core/       @bulkhead-ai/core      Detection engine, guards, cascade, patterns
     vscode/     bulkhead            VS Code extension (depends on core)
-    server/     @floatingsidewal/bulkhead-server    HTTP REST + MCP server (depends on core)
+    server/     @bulkhead-ai/server    HTTP REST + MCP server (depends on core)
   Dockerfile                        Multi-stage build for containerized deployment
   docker-compose.yml                HTTP and MCP service definitions
   .mcp.json                         Claude Code MCP configuration
@@ -29,14 +29,14 @@ bulkhead/
 **Dependency graph:**
 
 ```
-@floatingsidewal/bulkhead-core        (no internal deps — standalone library)
+@bulkhead-ai/core        (no internal deps — standalone library)
     ^         ^
     |         |
-bulkhead   @floatingsidewal/bulkhead-server
+bulkhead   @bulkhead-ai/server
 (vscode)   (fastify + MCP SDK)
 ```
 
-`@floatingsidewal/bulkhead-core` is the shared detection engine. Both the VS Code extension and the
+`@bulkhead-ai/core` is the shared detection engine. Both the VS Code extension and the
 server package depend on it. Core has no dependency on VS Code APIs or Fastify -- it is a
 pure TypeScript library that can run in any Node.js environment.
 
@@ -73,7 +73,7 @@ The cascade uses three detection layers that progressively trade speed for depth
 
 ## Entry Points Into the Cascade
 
-The cascade is reachable through five different entry points, all of which converge on the same `@floatingsidewal/bulkhead-core` engine:
+The cascade is reachable through five different entry points, all of which converge on the same `@bulkhead-ai/core` engine:
 
 ```
 VS Code Extension              HTTP REST Server           MCP Server
@@ -93,7 +93,7 @@ VS Code Extension              HTTP REST Server           MCP Server
         (Layer 1 only)                 engine.modelScan()
                 |                      (Layer 1+2 or 1+2+3)
                 |                              |
-                +--------- @floatingsidewal/bulkhead-core -----+
+                +--------- @bulkhead-ai/core -----+
                            GuardrailsEngine
                                 |
                          CascadeClassifier
