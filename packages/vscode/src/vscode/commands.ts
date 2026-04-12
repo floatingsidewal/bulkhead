@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import type { GuardrailsEngine } from "@bulkhead-ai/core";
+import type { GuardrailsEngine } from "@floatingsidewal/bulkhead-core";
 import { resultsToDiagnostics } from "./diagnostics";
 
 export function registerCommands(
