@@ -1,4 +1,4 @@
-import { createEngine } from "@floatingsidewal/bulkhead-core";
+import { createEngine } from "@bulkhead-ai/core";
 import { loadConfig } from "./config";
 import { createServer } from "./server";
 import { createLlmProvider } from "./llm-providers";

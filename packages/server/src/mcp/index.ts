@@ -1,5 +1,5 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { createEngine } from "@floatingsidewal/bulkhead-core";
+import { createEngine } from "@bulkhead-ai/core";
 import { loadConfig } from "../config";
 import { createLlmProvider } from "../llm-providers";
 import { createMcpServer } from "./mcp-server";

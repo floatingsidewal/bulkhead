@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { GuardrailsEngine, EngineConfig } from "@floatingsidewal/bulkhead-core";
+import type { GuardrailsEngine, EngineConfig } from "@bulkhead-ai/core";
 
 interface ScanBody {
   text: string;

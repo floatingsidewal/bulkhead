@@ -1,4 +1,4 @@
-# @floatingsidewal/bulkhead-core
+# @bulkhead-ai/core
 
 Cascading content protection engine -- detects and redacts PII, secrets, prompt injection, and system prompt leakage in text before it reaches LLMs.
 
@@ -6,22 +6,20 @@ Part of the [Bulkhead](https://github.com/floatingsidewal/bulkhead) project.
 
 ## Install
 
-Add the GitHub Packages registry to your `.npmrc`:
 
 ```
-@floatingsidewal:registry=https://npm.pkg.github.com
 ```
 
 Then install:
 
 ```bash
-npm install @floatingsidewal/bulkhead-core
+npm install @bulkhead-ai/core
 ```
 
 ## Quick Start
 
 ```typescript
-import { createEngine } from "@floatingsidewal/bulkhead-core";
+import { createEngine } from "@bulkhead-ai/core";
 
 const engine = createEngine();
 
@@ -50,7 +48,7 @@ All structured patterns include checksum validation where applicable (Luhn, IBAN
 ## Configuration
 
 ```typescript
-import { createEngine, type BulkheadConfig } from "@floatingsidewal/bulkhead-core";
+import { createEngine, type BulkheadConfig } from "@bulkhead-ai/core";
 
 const engine = createEngine({
   enabled: true,
@@ -75,7 +73,7 @@ const engine = createEngine({
 For fine-grained control, compose guards directly:
 
 ```typescript
-import { GuardrailsEngine, PiiGuard, SecretGuard } from "@floatingsidewal/bulkhead-core";
+import { GuardrailsEngine, PiiGuard, SecretGuard } from "@bulkhead-ai/core";
 
 const engine = new GuardrailsEngine();
 engine.addGuard(new PiiGuard());
