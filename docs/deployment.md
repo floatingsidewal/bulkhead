@@ -1,6 +1,116 @@
 # Deployment Guide
 
-Bulkhead supports five deployment scenarios. Each uses the same `@bulkhead/core` detection engine with different transport layers.
+Bulkhead supports multiple deployment scenarios. Each uses the same `@bulkhead/core` detection engine with different transport layers.
+
+## Consuming from Another Project
+
+The fastest way to use Bulkhead from another project. Choose npm for library integration or Docker for MCP/HTTP server usage.
+
+### npm (Library)
+
+Add the GitHub Packages registry to your project's `.npmrc`:
+
+```
+@bulkhead:registry=https://npm.pkg.github.com
+```
+
+Install:
+
+```bash
+npm install @bulkhead/core
+```
+
+Use in your code:
+
+```typescript
+import { createEngine, getPolicy } from "@bulkhead/core";
+
+// Simple scan (no policy)
+const engine = createEngine();
+const { passed, results } = await engine.scan("My SSN is 123-45-6789");
+
+// Policy scan with risk assessment and test data detection
+const policyEngine = createEngine({
+  enabled: true,
+  debounceMs: 500,
+  guards: {
+    pii: { enabled: true },
+    secret: { enabled: true },
+    injection: { enabled: true },
+    contentSafety: { enabled: false },
+  },
+  cascade: {
+    escalationThreshold: 0.75,
+    contextSentences: 3,
+    modelEnabled: false,
+    modelId: "Xenova/bert-base-NER",
+  },
+  policy: "strict",
+});
+
+const policy = getPolicy("strict");
+const { risk } = await policyEngine.policyScan(JSON.stringify(myData), policy);
+console.log(risk.level);        // "critical" | "high" | "medium" | "low" | "none"
+console.log(risk.issues);       // classified issues by category
+console.log(risk.testDataFlags); // synthetic/eval data detected
+```
+
+For the HTTP/MCP server package:
+
+```bash
+npm install @bulkhead/server
+```
+
+Then run as an MCP server or HTTP server:
+
+```bash
+npx bulkhead-mcp    # MCP over stdio
+npx bulkhead-server # HTTP on port 3000
+```
+
+### Docker Container (MCP Server)
+
+No npm install required. Pull and run the pre-built container from GitHub Container Registry:
+
+```bash
+# MCP mode (stdio) — for AI assistant integration
+docker run --rm -i ghcr.io/floatingsidewal/bulkhead:latest packages/server/dist/mcp/index.js
+
+# HTTP mode — REST API on port 3000
+docker run -p 3000:3000 ghcr.io/floatingsidewal/bulkhead:latest
+```
+
+Configure in your project's `.mcp.json` for Claude Code:
+
+```json
+{
+  "mcpServers": {
+    "bulkhead": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "ghcr.io/floatingsidewal/bulkhead:latest", "packages/server/dist/mcp/index.js"]
+    }
+  }
+}
+```
+
+For GitHub Copilot, add to `.github/copilot/mcp.json` with the same format.
+
+If the container registry is private, authenticate first:
+
+```bash
+echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+```
+
+### Which Should I Use?
+
+| Approach | Best for | Tradeoffs |
+|----------|----------|-----------|
+| **npm library** | In-process scanning, custom policies, risk assessment | Tightest integration, requires Node.js |
+| **Docker MCP** | AI assistant integration (Claude Code, Copilot) | Zero install, isolated, no Node.js needed |
+| **Docker HTTP** | Centralized scanning service, CI/CD pipelines | Language-agnostic, network overhead |
+| **npm MCP/HTTP** | Lightweight server without Docker | Needs Node.js runtime installed |
+
+---
 
 ## 1. VS Code Extension
 
@@ -183,14 +293,27 @@ curl -s http://localhost:3000/readyz
 
 ### Claude Code
 
-Add `.mcp.json` to your project root:
+Add `.mcp.json` to your project root. Use the published container (no local install needed):
+
+```json
+{
+  "mcpServers": {
+    "bulkhead": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "ghcr.io/floatingsidewal/bulkhead:latest", "packages/server/dist/mcp/index.js"]
+    }
+  }
+}
+```
+
+Or if you have `@bulkhead/server` installed via npm:
 
 ```json
 {
   "mcpServers": {
     "bulkhead": {
       "command": "npx",
-      "args": ["tsx", "packages/server/src/mcp/index.ts"]
+      "args": ["bulkhead-mcp"]
     }
   }
 }
@@ -198,14 +321,14 @@ Add `.mcp.json` to your project root:
 
 ### GitHub Copilot CLI
 
-Add `.github/copilot/mcp.json` to your repository:
+Add `.github/copilot/mcp.json` to your repository (same formats as above):
 
 ```json
 {
   "mcpServers": {
     "bulkhead": {
-      "command": "npx",
-      "args": ["tsx", "packages/server/src/mcp/index.ts"]
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "ghcr.io/floatingsidewal/bulkhead:latest", "packages/server/dist/mcp/index.js"]
     }
   }
 }
@@ -346,32 +469,33 @@ readinessProbe:
 
 **Use case:** Containerized AI assistant integration. Run the MCP server in Docker for isolation and reproducibility, connecting via stdio.
 
-### Build
+### Using the Published Image
+
+```bash
+# Pull from GitHub Container Registry
+docker run --rm -i ghcr.io/floatingsidewal/bulkhead:latest packages/server/dist/mcp/index.js
+```
+
+### Building Locally
 
 ```bash
 docker build -t bulkhead .
-```
-
-### Startup
-
-```bash
-# Direct
 docker run --rm -i bulkhead packages/server/dist/mcp/index.js
 
-# Using docker-compose
+# Or via docker-compose
 docker compose run --rm -i bulkhead-mcp
 ```
 
 ### MCP Configuration (Docker)
 
-For Claude Code, add a Docker-based MCP server to `.mcp.json`:
+For Claude Code, add to `.mcp.json`:
 
 ```json
 {
   "mcpServers": {
-    "bulkhead-docker": {
+    "bulkhead": {
       "command": "docker",
-      "args": ["run", "--rm", "-i", "bulkhead", "packages/server/dist/mcp/index.js"]
+      "args": ["run", "--rm", "-i", "ghcr.io/floatingsidewal/bulkhead:latest", "packages/server/dist/mcp/index.js"]
     }
   }
 }

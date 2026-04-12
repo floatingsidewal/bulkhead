@@ -18,6 +18,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx tsc --noEmit -p packages/core/tsconfig.json
+      - name: Build core (required for server type resolution)
+        run: cd packages/core && npx tsup
       - run: npx tsc --noEmit -p packages/server/tsconfig.json
 
   test:
@@ -30,10 +32,12 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Build core (required for server tests)
+        run: cd packages/core && npx tsup
       - name: Core unit tests
-        run: npm test --workspace=packages/core
+        run: npm test --workspace=@bulkhead/core
       - name: Server integration tests
-        run: npm test --workspace=packages/server
+        run: npm test --workspace=@bulkhead/server
 
   build:
     name: Build & Publish npm
