@@ -4,15 +4,11 @@ HTTP REST and MCP server for the [Bulkhead](https://github.com/floatingsidewal/b
 
 ## Install
 
-This package is available under two scopes:
-
 ```bash
 npm install @bulkhead-ai/server
-# or
-npm install @floatingsidewal/bulkhead-server
 ```
 
-Both packages are identical. Use whichever scope fits your project.
+Also available as `@floatingsidewal/bulkhead-server` via [GitHub Packages](https://github.com/floatingsidewal/bulkhead/packages) and as a Docker container at `ghcr.io/floatingsidewal/bulkhead`.
 
 ## MCP Server
 
@@ -24,9 +20,9 @@ Exposes three tools via the Model Context Protocol (stdio transport):
 | `bulkhead_redact` | Scan and return redacted text with `[REDACTED-TYPE]` placeholders |
 | `bulkhead_configure` | Enable/disable guards at runtime |
 
-### Claude Code
+### Claude Code / GitHub Copilot
 
-Add to your project's `.mcp.json`:
+Add to your project's `.mcp.json` (or `.github/copilot/mcp.json`):
 
 ```json
 {
@@ -45,16 +41,12 @@ Or if installed via npm:
 npx bulkhead-mcp
 ```
 
-### GitHub Copilot
-
-Add to `.github/copilot/mcp.json` with the same format.
-
 ## HTTP REST Server
 
 ```bash
-bulkhead-server
-# or
 npx bulkhead-server
+# or
+docker run -p 3000:3000 ghcr.io/floatingsidewal/bulkhead:latest
 ```
 
 ### Endpoints
@@ -69,7 +61,7 @@ npx bulkhead-server
 | GET | `/readyz` | Readiness (BERT model loaded?) |
 | GET | `/info` | Guard configuration summary |
 
-### Request Format
+### Example
 
 ```bash
 curl -X POST http://localhost:3000/v1/scan \
@@ -90,17 +82,9 @@ curl -X POST http://localhost:3000/v1/scan \
 | `BULKHEAD_LLM_API_KEY` | -- | LLM provider API key |
 | `BULKHEAD_LLM_ENDPOINT` | -- | Custom LLM endpoint URL |
 
-## Docker
+## Documentation
 
-```bash
-# HTTP mode
-docker run -p 3000:3000 ghcr.io/floatingsidewal/bulkhead:latest
-
-# MCP mode (stdio)
-docker run --rm -i ghcr.io/floatingsidewal/bulkhead:latest packages/server/dist/mcp/index.js
-```
-
-See the [deployment guide](https://github.com/floatingsidewal/bulkhead/tree/develop/docs/deployment.md) for Docker configuration details.
+See the [How-To Guide](https://github.com/floatingsidewal/bulkhead/blob/develop/docs/how-to.md) for comprehensive examples and the [full documentation](https://github.com/floatingsidewal/bulkhead/tree/develop/docs) for architecture, deployment, and API reference.
 
 ## License
 

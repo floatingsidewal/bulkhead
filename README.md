@@ -31,26 +31,17 @@ Bulkhead sits between your code and the AI, catching sensitive content before it
 
 ## Install
 
-
-```
-```
-
-Then install:
-
 ```bash
-# Core library (detection engine, guards, policies)
-npm install @floatingsidewal/bulkhead-core
-
-# HTTP REST + MCP server (optional)
-npm install @floatingsidewal/bulkhead-server
+npm install @bulkhead-ai/core
 ```
+
+Also available as `@floatingsidewal/bulkhead-core` via [GitHub Packages](https://github.com/floatingsidewal/bulkhead/packages) and as a Docker container at `ghcr.io/floatingsidewal/bulkhead`.
 
 ### Quick Start
 
 ```typescript
-import { createEngine, getPolicy } from "@floatingsidewal/bulkhead-core";
+import { createEngine, getPolicy } from "@bulkhead-ai/core";
 
-// Create a policy-aware engine
 const engine = createEngine({
   enabled: true, debounceMs: 500,
   guards: { pii: { enabled: true }, secret: { enabled: true }, injection: { enabled: true }, contentSafety: { enabled: false } },
@@ -58,24 +49,25 @@ const engine = createEngine({
   policy: "strict",
 });
 
-// Scan with risk assessment
 const policy = getPolicy("strict");
 const { risk } = await engine.policyScan("My SSN is 123-45-6789", policy);
-console.log(risk.level);  // "high"
-console.log(risk.issues);  // [{ category: "pii", entityType: "US_SSN", severity: "high", isTestData: true, ... }]
+console.log(risk.level);   // "high"
+console.log(risk.issues);  // [{ category: "pii", entityType: "US_SSN", severity: "high", isTestData: true }]
 ```
+
+See the [How-To Guide](docs/how-to.md) for comprehensive examples including medical record scanning, bulk data redaction, and custom policies.
 
 ## Project Structure
 
 ```
 bulkhead/
   packages/
-    core/       @floatingsidewal/bulkhead-core    Detection engine, guards, cascade, policies
-    vscode/     bulkhead          VS Code extension
-    server/     @floatingsidewal/bulkhead-server  HTTP REST server + MCP server
-  docs/                           Guides: architecture, API, policies, patterns
-  Dockerfile                      Multi-stage build (HTTP + MCP modes)
-  docker-compose.yml              HTTP and MCP service definitions
+    core/       @bulkhead-ai/core      Detection engine, guards, cascade, policies
+    vscode/     bulkhead               VS Code extension
+    server/     @bulkhead-ai/server    HTTP REST server + MCP server
+  docs/                                Guides: architecture, API, policies, patterns
+  Dockerfile                           Multi-stage build (HTTP + MCP modes)
+  docker-compose.yml                   HTTP and MCP service definitions
 ```
 
 ## How It Works
@@ -213,7 +205,7 @@ docker compose run --rm -i bulkhead-mcp
 ### Use as a library
 
 ```typescript
-import { GuardrailsEngine, PiiGuard, SecretGuard } from "@floatingsidewal/bulkhead-core";
+import { GuardrailsEngine, PiiGuard, SecretGuard } from "@bulkhead-ai/core";
 
 const engine = new GuardrailsEngine();
 engine.addGuard(new PiiGuard());
