@@ -3,6 +3,30 @@
   "version": "0.1.0",
   "description": "Cascading content protection engine — PII detection, secret scanning, prompt injection defense",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/floatingsidewal/bulkhead.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/floatingsidewal/bulkhead#readme",
+  "bugs": "https://github.com/floatingsidewal/bulkhead/issues",
+  "keywords": [
+    "pii",
+    "redaction",
+    "secrets",
+    "guardrails",
+    "content-safety",
+    "mcp",
+    "prompt-injection",
+    "dlp"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -11,6 +35,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
+    },
+    "./cascade": {
+      "types": "./dist/cascade/index.d.ts",
+      "import": "./dist/cascade/index.mjs",
+      "require": "./dist/cascade/index.js"
     }
   },
   "files": [
@@ -25,10 +54,16 @@
   "dependencies": {
     "string-similarity": "^4.0.4"
   },
-  "optionalDependencies": {
+  "peerDependencies": {
     "@huggingface/transformers": "^3.0.0"
   },
+  "peerDependenciesMeta": {
+    "@huggingface/transformers": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@huggingface/transformers": "^3.0.0",
     "@types/string-similarity": "^4.0.2",
     "tsx": "^4.7.0"
   }
