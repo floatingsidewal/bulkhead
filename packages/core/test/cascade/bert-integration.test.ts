@@ -12,11 +12,14 @@ import { SecretGuard } from "../../src/guards/secret.guard";
 
 let transformersAvailable = false;
 
-try {
-  require.resolve("@huggingface/transformers");
-  transformersAvailable = true;
-} catch {
-  // Optional dependency not installed
+// Skip in CI — BERT tests download a 29MB model and need native sharp bindings
+if (!process.env.CI) {
+  try {
+    require.resolve("@huggingface/transformers");
+    transformersAvailable = true;
+  } catch {
+    // Optional dependency not installed
+  }
 }
 
 const describeIf = transformersAvailable ? describe : describe.skip;
