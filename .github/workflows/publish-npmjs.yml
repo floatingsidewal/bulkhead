@@ -6,7 +6,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 jobs:
   publish:
@@ -14,24 +14,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
       - uses: actions/setup-node@v5
         with:
-          node-version: '20.x'
+          node-version: '24'
+          # No registry-url or always-auth — trusted publishing uses OIDC
+
       - run: npm install -g npm@latest
       - run: npm ci
+
       - name: Build core
         run: cd packages/core && npx tsup
       - name: Build server
         run: cd packages/server && npx tsup
 
-      # Write a clean .npmrc — no authToken (OIDC handles auth via --provenance)
-      - name: Configure registry for OIDC
-        run: |
-          echo "registry=https://registry.npmjs.org/" > ~/.npmrc
-
-      # Clean any project-level .npmrc
-      - name: Clean project .npmrc
-        run: rm -f .npmrc packages/core/.npmrc packages/server/.npmrc
+      # Clean any .npmrc files so npm uses pure OIDC
+      - name: Clean all .npmrc files
+        run: rm -f ~/.npmrc .npmrc packages/core/.npmrc packages/server/.npmrc
 
       - name: Publish @bulkhead-ai/core
         run: |
@@ -39,11 +38,10 @@ jobs:
           node -e "
             const p=require('./package.json');
             p.name='@bulkhead-ai/core';
-            delete p.publishConfig.registry;
+            delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
-          npm publish "$TARBALL" --access public --provenance || echo "Version already published, skipping"
+          npm publish --provenance --access public || echo "Version already published, skipping"
 
       - name: Publish @bulkhead-ai/server
         run: |
@@ -53,8 +51,7 @@ jobs:
             p.name='@bulkhead-ai/server';
             p.dependencies['@bulkhead-ai/core']=p.dependencies['@floatingsidewal/bulkhead-core'];
             delete p.dependencies['@floatingsidewal/bulkhead-core'];
-            delete p.publishConfig.registry;
+            delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          TARBALL=$(npm pack --json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].filename)")
-          npm publish "$TARBALL" --access public --provenance || echo "Version already published, skipping"
+          npm publish --provenance --access public || echo "Version already published, skipping"
