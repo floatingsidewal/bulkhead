@@ -1,6 +1,6 @@
 {
-  "name": "@bulkhead-ai/server",
-  "version": "0.2.0",
+  "name": "@floatingsidewal/bulkhead-server",
+  "version": "0.3.0",
   "description": "Bulkhead guardrails HTTP REST and MCP server",
   "license": "MIT",
   "repository": {
@@ -21,6 +21,9 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "main": "./dist/main.js",
   "types": "./dist/main.d.ts",
   "bin": {
@@ -39,7 +42,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@bulkhead-ai/core": "^0.2.0",
+    "@floatingsidewal/bulkhead-core": "^0.2.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "fastify": "^5.0.0"
   },
