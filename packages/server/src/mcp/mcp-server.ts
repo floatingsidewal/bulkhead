@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { GuardrailsEngine, GuardResult, Detection } from "@bulkhead-ai/core";
+import type { GuardrailsEngine, GuardResult, Detection } from "@floatingsidewal/bulkhead-core";
 
 /** Build a human-readable summary of detections with cascade layer info */
 function formatDetectionSummary(

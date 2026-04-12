@@ -1,4 +1,4 @@
-# @bulkhead-ai/server
+# @floatingsidewal/bulkhead-server
 
 HTTP REST and MCP server for the [Bulkhead](https://github.com/floatingsidewal/bulkhead) content protection engine.
 
@@ -11,7 +11,7 @@ HTTP REST and MCP server for the [Bulkhead](https://github.com/floatingsidewal/b
 Then install:
 
 ```bash
-npm install @bulkhead-ai/server
+npm install @floatingsidewal/bulkhead-server
 ```
 
 ## MCP Server
