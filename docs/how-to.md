@@ -79,18 +79,20 @@ In your VS Code workspace settings (`.vscode/settings.json`):
 
 ## Use Bulkhead as a Library (Outside VS Code)
 
-Bulkhead's core is framework-agnostic. You can use the guards and engine without VS Code:
+Bulkhead's core is framework-agnostic. Install from GitHub Packages:
+
+```bash
+npm install @bulkhead/core
+```
+
+> **Note:** Add `@bulkhead:registry=https://npm.pkg.github.com` to your `.npmrc` file.
+
+### Basic Scanning
 
 ```typescript
-import { GuardrailsEngine } from "./src/engine/engine";
-import { PiiGuard } from "./src/guards/pii.guard";
-import { SecretGuard } from "./src/guards/secret.guard";
-import { InjectionGuard } from "./src/guards/injection.guard";
+import { createEngine } from "@bulkhead/core";
 
-const engine = new GuardrailsEngine();
-engine.addGuard(new PiiGuard());
-engine.addGuard(new SecretGuard());
-engine.addGuard(new InjectionGuard());
+const engine = createEngine();
 
 // Scan text
 const results = await engine.analyze(inputText);
@@ -108,6 +110,60 @@ const scanResult = await engine.scan(inputText);
 if (scanResult.redactedText) {
   console.log("Redacted:", scanResult.redactedText);
 }
+```
+
+### Policy-Based Scanning with Risk Assessment
+
+For structured risk ratings and classified issues, use policy scanning:
+
+```typescript
+import { createEngine, getPolicy } from "@bulkhead/core";
+
+// Create engine with a policy (includes TestDataGuard automatically)
+const engine = createEngine({
+  enabled: true,
+  debounceMs: 500,
+  guards: {
+    pii: { enabled: true },
+    secret: { enabled: true },
+    injection: { enabled: true },
+    contentSafety: { enabled: false },
+  },
+  cascade: {
+    escalationThreshold: 0.75,
+    contextSentences: 3,
+    modelEnabled: false,
+    modelId: "Xenova/bert-base-NER",
+  },
+  policy: "strict",  // or "moderate", or a custom PolicyDefinition
+});
+
+const policy = getPolicy("strict");
+const { passed, risk, results, redactedText } = await engine.policyScan(inputText, policy);
+
+console.log(`Risk level: ${risk.level}`);       // "critical" | "high" | "medium" | "low" | "none"
+console.log(`Risk score: ${risk.score}`);        // 0-1
+console.log(`Issues: ${risk.issues.length}`);    // classified issues
+console.log(`Test data: ${risk.testDataFlags.length}`); // synthetic data flags
+
+for (const issue of risk.issues) {
+  const testLabel = issue.isTestData ? " [TEST DATA]" : "";
+  console.log(`  ${issue.severity} ${issue.category}/${issue.entityType} x${issue.count}${testLabel}`);
+}
+```
+
+See the [Policy Guide](./policy.md) for full details on policies, risk assessment, and test data detection.
+
+### Custom Guard Composition
+
+For fine-grained control over which guards and entity types to use:
+
+```typescript
+import { GuardrailsEngine, PiiGuard, SecretGuard } from "@bulkhead/core";
+
+const engine = new GuardrailsEngine();
+engine.addGuard(new PiiGuard({ entityTypes: ["CREDIT_CARD", "US_SSN"] }));
+engine.addGuard(new SecretGuard({ secretTypes: ["AWS_ACCESS_KEY", "STRIPE_KEY"] }));
 ```
 
 ## Enable the BERT Model (Layer 2)

@@ -106,7 +106,7 @@ Run Layer 1 (regex) scan. Sub-millisecond latency.
 | `results[].detections[].text` | string | The matched text span |
 | `results[].detections[].score` | number | Confidence score 0-1 |
 | `results[].detections[].source` | string | Which cascade layer: `regex`, `bert`, or `llm` |
-| `results[].detections[].disposition` | string | `confirmed`, `escalate`, or `dismissed` |
+| `results[].detections[].disposition` | string | `confirmed`, `escalate`, `dismissed`, or `informational` (test data) |
 
 ---
 

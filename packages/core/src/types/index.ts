@@ -5,7 +5,7 @@ export type Confidence = "high" | "medium" | "low";
 export type DetectionSource = "regex" | "bert" | "llm";
 
 /** Whether this detection is final or needs escalation */
-export type Disposition = "confirmed" | "escalate" | "dismissed";
+export type Disposition = "confirmed" | "escalate" | "dismissed" | "informational";
 
 /** A detected entity in text */
 export interface Detection {

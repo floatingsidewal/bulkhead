@@ -3,6 +3,27 @@
   "version": "0.1.0",
   "description": "Bulkhead guardrails HTTP REST and MCP server",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/floatingsidewal/bulkhead.git",
+    "directory": "packages/server"
+  },
+  "homepage": "https://github.com/floatingsidewal/bulkhead#readme",
+  "bugs": "https://github.com/floatingsidewal/bulkhead/issues",
+  "keywords": [
+    "bulkhead",
+    "guardrails",
+    "mcp",
+    "content-safety",
+    "pii",
+    "secrets"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "main": "./dist/main.js",
   "types": "./dist/main.d.ts",
   "bin": {
@@ -21,7 +42,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@bulkhead/core": "0.1.0",
+    "@bulkhead/core": "^0.1.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "fastify": "^5.0.0"
   },

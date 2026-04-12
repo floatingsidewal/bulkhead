@@ -1,12 +1,20 @@
 import { defineConfig } from "tsup";
 
-export default defineConfig({
-  entry: ["src/index.ts"],
-  format: ["esm", "cjs"],
-  dts: true,
-  clean: true,
-  sourcemap: true,
-  // bert-worker.ts must be built separately as it runs in a worker thread
-  // and cannot be bundled into the main entry
-  noExternal: [],
-});
+export default defineConfig([
+  {
+    entry: ["src/index.ts", "src/cascade/index.ts"],
+    format: ["esm", "cjs"],
+    dts: true,
+    clean: true,
+    sourcemap: true,
+    noExternal: [],
+  },
+  {
+    entry: ["src/cascade/bert-worker.ts"],
+    format: ["cjs"],
+    outDir: "dist/cascade",
+    clean: false,
+    sourcemap: true,
+    external: ["@huggingface/transformers"],
+  },
+]);
