@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createEngine, DEFAULT_CONFIG } from "@bulkhead/core";
+import { createEngine, DEFAULT_CONFIG } from "@floatingsidewal/bulkhead-core";
 import { createServer } from "../src/server";
 import type { ServerConfig } from "../src/config";
 import type { FastifyInstance } from "fastify";

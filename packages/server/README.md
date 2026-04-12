@@ -1,4 +1,4 @@
-# @bulkhead/server
+# @floatingsidewal/bulkhead-server
 
 HTTP REST and MCP server for the [Bulkhead](https://github.com/floatingsidewal/bulkhead) content protection engine.
 
@@ -7,13 +7,13 @@ HTTP REST and MCP server for the [Bulkhead](https://github.com/floatingsidewal/b
 Add the GitHub Packages registry to your `.npmrc`:
 
 ```
-@bulkhead:registry=https://npm.pkg.github.com
+@floatingsidewal:registry=https://npm.pkg.github.com
 ```
 
 Then install:
 
 ```bash
-npm install @bulkhead/server
+npm install @floatingsidewal/bulkhead-server
 ```
 
 ## MCP Server

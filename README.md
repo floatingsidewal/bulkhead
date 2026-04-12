@@ -34,23 +34,23 @@ Bulkhead sits between your code and the AI, catching sensitive content before it
 Packages are published to [GitHub Packages](https://github.com/floatingsidewal/bulkhead/packages). Add the registry to your `.npmrc`:
 
 ```
-@bulkhead:registry=https://npm.pkg.github.com
+@floatingsidewal:registry=https://npm.pkg.github.com
 ```
 
 Then install:
 
 ```bash
 # Core library (detection engine, guards, policies)
-npm install @bulkhead/core
+npm install @floatingsidewal/bulkhead-core
 
 # HTTP REST + MCP server (optional)
-npm install @bulkhead/server
+npm install @floatingsidewal/bulkhead-server
 ```
 
 ### Quick Start
 
 ```typescript
-import { createEngine, getPolicy } from "@bulkhead/core";
+import { createEngine, getPolicy } from "@floatingsidewal/bulkhead-core";
 
 // Create a policy-aware engine
 const engine = createEngine({
@@ -72,9 +72,9 @@ console.log(risk.issues);  // [{ category: "pii", entityType: "US_SSN", severity
 ```
 bulkhead/
   packages/
-    core/       @bulkhead/core    Detection engine, guards, cascade, policies
+    core/       @floatingsidewal/bulkhead-core    Detection engine, guards, cascade, policies
     vscode/     bulkhead          VS Code extension
-    server/     @bulkhead/server  HTTP REST server + MCP server
+    server/     @floatingsidewal/bulkhead-server  HTTP REST server + MCP server
   docs/                           Guides: architecture, API, policies, patterns
   Dockerfile                      Multi-stage build (HTTP + MCP modes)
   docker-compose.yml              HTTP and MCP service definitions
@@ -215,7 +215,7 @@ docker compose run --rm -i bulkhead-mcp
 ### Use as a library
 
 ```typescript
-import { GuardrailsEngine, PiiGuard, SecretGuard } from "@bulkhead/core";
+import { GuardrailsEngine, PiiGuard, SecretGuard } from "@floatingsidewal/bulkhead-core";
 
 const engine = new GuardrailsEngine();
 engine.addGuard(new PiiGuard());
