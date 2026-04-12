@@ -82,15 +82,15 @@ In your VS Code workspace settings (`.vscode/settings.json`):
 Bulkhead's core is framework-agnostic. Install from GitHub Packages:
 
 ```bash
-npm install @bulkhead/core
+npm install @floatingsidewal/bulkhead-core
 ```
 
-> **Note:** Add `@bulkhead:registry=https://npm.pkg.github.com` to your `.npmrc` file.
+> **Note:** Add `@floatingsidewal:registry=https://npm.pkg.github.com` to your `.npmrc` file.
 
 ### Basic Scanning
 
 ```typescript
-import { createEngine } from "@bulkhead/core";
+import { createEngine } from "@floatingsidewal/bulkhead-core";
 
 const engine = createEngine();
 
@@ -117,7 +117,7 @@ if (scanResult.redactedText) {
 For structured risk ratings and classified issues, use policy scanning:
 
 ```typescript
-import { createEngine, getPolicy } from "@bulkhead/core";
+import { createEngine, getPolicy } from "@floatingsidewal/bulkhead-core";
 
 // Create engine with a policy (includes TestDataGuard automatically)
 const engine = createEngine({
@@ -159,7 +159,7 @@ See the [Policy Guide](./policy.md) for full details on policies, risk assessmen
 For fine-grained control over which guards and entity types to use:
 
 ```typescript
-import { GuardrailsEngine, PiiGuard, SecretGuard } from "@bulkhead/core";
+import { GuardrailsEngine, PiiGuard, SecretGuard } from "@floatingsidewal/bulkhead-core";
 
 const engine = new GuardrailsEngine();
 engine.addGuard(new PiiGuard({ entityTypes: ["CREDIT_CARD", "US_SSN"] }));

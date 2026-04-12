@@ -35,9 +35,9 @@ jobs:
       - name: Build core (required for server tests)
         run: cd packages/core && npx tsup
       - name: Core unit tests
-        run: npm test --workspace=@bulkhead/core
+        run: npm test --workspace=@floatingsidewal/bulkhead-core
       - name: Server integration tests
-        run: npm test --workspace=@bulkhead/server
+        run: npm test --workspace=@floatingsidewal/bulkhead-server
 
   build:
     name: Build & Publish npm
@@ -58,14 +58,14 @@ jobs:
         run: cd packages/core && npx tsup
       - name: Build server
         run: cd packages/server && npx tsup
-      - name: Publish @bulkhead/core
+      - name: Publish @floatingsidewal/bulkhead-core
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: npm publish --workspace=@bulkhead/core --access public --no-git-checks || echo "Version already published, skipping"
+        run: npm publish --workspace=@floatingsidewal/bulkhead-core --access public --no-git-checks || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish @bulkhead/server
+      - name: Publish @floatingsidewal/bulkhead-server
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: npm publish --workspace=@bulkhead/server --access public --no-git-checks || echo "Version already published, skipping"
+        run: npm publish --workspace=@floatingsidewal/bulkhead-server --access public --no-git-checks || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

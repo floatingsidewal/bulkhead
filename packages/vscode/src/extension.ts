@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { createEngine, type GuardrailsEngine } from "@bulkhead/core";
+import { createEngine, type GuardrailsEngine } from "@floatingsidewal/bulkhead-core";
 import { getConfig } from "./vscode/config";
 import {
   createDiagnosticCollection,
