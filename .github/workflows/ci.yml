@@ -52,13 +52,18 @@ jobs:
         run: cd packages/server && npx tsup
 
   docker:
-    name: Docker Build
+    name: Docker Build & Push
     runs-on: ubuntu-latest
     needs: [lint, test]
+    permissions:
+      packages: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
+
       - name: Build Docker image
         run: docker build -t bulkhead:ci .
+
       - name: Smoke test — HTTP mode
         run: |
           docker run -d --name bulkhead-ci -p 3000:3000 bulkhead:ci
@@ -69,11 +74,30 @@ jobs:
             -d '{"text":"SSN: 219-09-9999"}' | grep -q '"US_SSN"'
           docker stop bulkhead-ci
           docker rm bulkhead-ci
+
       - name: Smoke test — MCP mode
         run: |
           echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"1.0"}}}' \
             | docker run --rm -i bulkhead:ci packages/server/dist/mcp/index.js \
             | grep -q '"bulkhead"'
+
       - name: Verify non-root user
         run: |
           docker run --rm bulkhead:ci /usr/bin/whoami | grep -q bulkhead
+
+      - name: Log in to GitHub Container Registry
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push to ghcr.io
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          docker tag bulkhead:ci ghcr.io/${{ github.repository }}:${VERSION}
+          docker tag bulkhead:ci ghcr.io/${{ github.repository }}:latest
+          docker push ghcr.io/${{ github.repository }}:${VERSION}
+          docker push ghcr.io/${{ github.repository }}:latest
