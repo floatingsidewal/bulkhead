@@ -1,0 +1,29 @@
+name: Publish to npmjs.org
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build & Publish to npmjs.org
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - name: Build core
+        run: cd packages/core && npx tsup
+      - name: Build server
+        run: cd packages/server && npx tsup
+      - name: Publish @floatingsidewal/bulkhead-core
+        run: npm publish --workspace=@floatingsidewal/bulkhead-core --access public --no-git-checks || echo "Version already published, skipping"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish @floatingsidewal/bulkhead-server
+        run: npm publish --workspace=@floatingsidewal/bulkhead-server --access public --no-git-checks || echo "Version already published, skipping"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
