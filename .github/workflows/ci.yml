@@ -101,7 +101,7 @@ jobs:
 
       - name: Verify non-root user
         run: |
-          docker run --rm bulkhead:ci /usr/bin/whoami | grep -q bulkhead
+          docker run --rm --entrypoint /usr/bin/whoami bulkhead:ci | grep -q bulkhead
 
       - name: Log in to GitHub Container Registry
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
