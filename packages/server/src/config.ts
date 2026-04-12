@@ -1,4 +1,4 @@
-import { type BulkheadConfig, DEFAULT_CONFIG } from "@bulkhead/core";
+import { type BulkheadConfig, DEFAULT_CONFIG } from "@floatingsidewal/bulkhead-core";
 
 export interface ServerConfig {
   port: number;

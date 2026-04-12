@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "npm run build --workspaces",
-    "test": "npm run test -w @bulkhead/core && npm run test -w @bulkhead/server",
+    "test": "npm run test -w @floatingsidewal/bulkhead-core && npm run test -w @floatingsidewal/bulkhead-server",
     "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {

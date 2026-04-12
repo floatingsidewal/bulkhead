@@ -1,5 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import type { GuardrailsEngine } from "@bulkhead/core";
+import type { GuardrailsEngine } from "@floatingsidewal/bulkhead-core";
 import type { ServerConfig } from "./config";
 import { registerScanRoutes } from "./routes/scan";
 import { registerHealthRoutes } from "./routes/health";
