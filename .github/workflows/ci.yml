@@ -71,17 +71,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # TODO: Enable public npmjs.org publishing under @bulkhead-ai scope
-      # - name: Publish @bulkhead-ai/core to npmjs.org
-      #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      #   run: npm publish --workspace=@bulkhead-ai/core --access public --no-git-checks || echo "Version already published, skipping"
-      #   env:
-      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      # - name: Publish @bulkhead-ai/server to npmjs.org
-      #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      #   run: npm publish --workspace=@bulkhead-ai/server --access public --no-git-checks || echo "Version already published, skipping"
-      #   env:
-      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # npmjs.org publishing is handled by the separate publish-npmjs.yml workflow (manual trigger)
 
   docker:
     name: Docker Build & Push
