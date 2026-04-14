@@ -2,7 +2,7 @@
   "name": "bulkhead",
   "displayName": "Bulkhead",
   "description": "LLM guardrails for VS Code — PII detection, secret scanning, prompt injection defense, and content safety",
-  "version": "0.1.0",
+  "version": "0.5.3",
   "license": "MIT",
   "publisher": "bulkhead",
   "engines": {
