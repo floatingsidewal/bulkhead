@@ -12,6 +12,50 @@ Bulkhead detects and redacts sensitive content -- PII, secrets, prompt injection
 | **Policy** | Named policies (strict, moderate), composable compliance overlays, risk assessment with classified issues |
 | **Tests** | 185 tests including adversarial suite, policy system, and performance benchmarks |
 
+## Why Bulkhead?
+
+### The AI Coding Assistant Blind Spot
+
+Every time a developer uses an AI coding assistant, the IDE sends context to an LLM -- not just the active file, but adjacent tabs, terminal output, clipboard contents, and project-wide search results. That context routinely includes `.env` files with database credentials, test fixtures with real customer data, and config files with API keys.
+
+This leakage happens **at edit time, not commit time.** It is continuous, invisible, and bypasses every existing control: git hooks don't see it, SAST doesn't scan it, WAFs don't intercept it. There is no diff, no PR, no audit trail. By the time a secret scanner catches something at commit, the AI assistant has already sent it to an LLM provider dozens of times.
+
+### What's at Stake
+
+- **HIPAA:** $50,000 -- $1.9M per violation. Average healthcare breach: $9.77M
+- **PCI-DSS:** $5,000 -- $100,000/month in non-compliance fines
+- **GDPR:** Up to 4% of annual global revenue
+- **SOC 2:** Audit failures mean lost enterprise contracts
+- **Average data breach cost:** $4.88M (IBM 2024). Mean time to identify: 194 days
+- **A single leaked AWS key** costs $50,000+ in cloud resource abuse on average
+
+### How Bulkhead Solves It
+
+Bulkhead sits between your editor and the AI, catching sensitive content before it leaves. Three detection layers trade speed for depth -- expensive inference only runs on the fraction of content that needs it:
+
+```mermaid
+flowchart LR
+    A["Input Text"] --> B["Layer 1: Regex\nsub-ms"]
+    B -->|"60-70% resolved"| C["Confirmed"]
+    B -->|"remaining"| D["Layer 2: BERT\n20-50ms"]
+    D -->|"~90% resolved"| C
+    D -->|"~5-10% ambiguous"| E["Layer 3: LLM\n500ms-2s"]
+    E --> C
+```
+
+Every detection carries **provenance** -- which layer flagged it, at what confidence, and why. Your compliance team gets "regex matched SSN with Luhn validation" or "BERT flagged a name at 0.92 confidence," not "the AI said so."
+
+### Deploy Anywhere, Change Nothing
+
+- **VS Code extension** -- catches leaks at the point of creation, on every keystroke
+- **HTTP REST server** -- CI/CD pipeline integration, API gateway sidecar
+- **MCP server** -- direct integration with Claude Code and GitHub Copilot
+- **Docker** -- zero-install containerized deployment for air-gapped environments
+
+Same engine, same 154 secret patterns, same 45+ PII types, same policies. Different transports.
+
+For the full business case with industry scenarios, architecture walkthroughs, and comparison with alternatives, see [Why Do We Need Content Protection for AI Dev Tools?](docs/why-do-we-need-this.md)
+
 ## What Makes Bulkhead Different
 
 The core innovation is the **cascading classifier** -- three detection layers that progressively trade speed for depth, so expensive inference only runs on the small fraction of content that actually needs it. Regex handles the bulk (sub-millisecond, every keystroke). A BERT model resolves contextual entities like names and locations. An LLM disambiguates the genuinely hard cases ("Is 'Jordan' a person or a country?"). Each detection carries full provenance -- which layer flagged it, at what confidence, and why.
@@ -263,6 +307,7 @@ The test suite includes an [adversarial test suite](test/adversarial/) covering 
 
 ## Documentation
 
+- [Why Bulkhead?](docs/why-do-we-need-this.md) -- Business case, real-world scenarios, comparison with alternatives
 - [Architecture](docs/architecture.md) -- Cascading classifier design, component map, entry points
 - [Policy Guide](docs/policy.md) -- Policies, risk assessment, test data detection, compliance overlays
 - [Deployment](docs/deployment.md) -- Five deployment scenarios with configuration and examples
