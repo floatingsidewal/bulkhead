@@ -93,7 +93,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@floatingsidewal/bulkhead-core": "0.5.2"
+    "@floatingsidewal/bulkhead-core": "0.5.3"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
