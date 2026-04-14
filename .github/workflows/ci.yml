@@ -10,13 +10,19 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      packages: read
+      contents: read
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
+          registry-url: https://npm.pkg.github.com
       - run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npx tsc --noEmit -p packages/core/tsconfig.json
       - name: Build core (required for server type resolution)
         run: cd packages/core && npx tsup
@@ -25,13 +31,19 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    permissions:
+      packages: read
+      contents: read
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
+          registry-url: https://npm.pkg.github.com
       - run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build core (required for server tests)
         run: cd packages/core && npx tsup
       - name: Core unit tests
