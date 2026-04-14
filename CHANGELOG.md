@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [VERSIONING.md](VERSIONING.md) for version numbering conventions.
 
+## [0.5.3] - 2026-04-14
+
+### Added
+- Executive sales pitch section in README with regulatory exposure data, cascade mermaid diagram, and deployment summary
+- New `docs/why-do-we-need-this.md` -- comprehensive business case with healthcare, fintech, enterprise SaaS, and government scenarios, architecture walkthroughs with mermaid diagrams, alternative comparison table, and cost-benefit analysis
+
 ## [0.5.2] - 2026-04-12
 
 ### Fixed
