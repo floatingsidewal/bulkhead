@@ -298,7 +298,7 @@ const results = await engine.analyze("Email: john@example.com, Key: AKIAIOSFODNN
 ## Testing
 
 ```bash
-npm test              # Run all 125 tests
+npm test              # Run all 185 tests
 npm run test:watch    # Watch mode (core package)
 npm run lint          # Type-check all packages
 ```
