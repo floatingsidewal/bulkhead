@@ -43,7 +43,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@floatingsidewal/bulkhead-core": "0.5.2",
+    "@floatingsidewal/bulkhead-core": "0.5.3",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "fastify": "^5.0.0"
   },
