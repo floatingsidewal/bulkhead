@@ -1,6 +1,6 @@
 {
   "name": "@floatingsidewal/bulkhead-server",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Bulkhead guardrails HTTP REST and MCP server",
   "license": "MIT",
   "repository": {
