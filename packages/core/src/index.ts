@@ -25,6 +25,7 @@ export type {
   GuardConfig,
   GuardMode,
   EngineConfig,
+  ObjectScanResult,
   Confidence,
   DetectionSource,
   Disposition,
