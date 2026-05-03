@@ -77,6 +77,8 @@ export type {
   RiskAssessment,
   ClassifiedIssue,
   TestDataFlag,
+  TemporalMode,
+  TemporalPolicy,
 } from "./policy";
 
 // Policy-aware engine creation
@@ -150,6 +152,11 @@ export function createEngine(config: BulkheadConfig = DEFAULT_CONFIG): Guardrail
     }
 
     engine.updateConfig({ guards: guardConfigs });
+
+    // Apply temporal policy if the resolved policy specifies one.
+    if (policy.temporalPolicy) {
+      engine.setTemporalPolicy(policy.temporalPolicy);
+    }
   } else {
     // Legacy path: use config.guards directly
     if (config.guards.pii.enabled) {
