@@ -74,6 +74,39 @@ export interface EngineConfig {
   guards: Record<string, Partial<GuardConfig>>;
 }
 
+/**
+ * Result of `engine.scanObject()`. Mirrors `engine.scan()` but adds a
+ * `redactedObject` field that preserves the input shape and a
+ * `pathDetections` map keyed by JSON path so consumers can locate
+ * detections within nested structures without re-walking.
+ */
+export interface ObjectScanResult<T> {
+  /** True iff every string leaf passed every enabled guard. */
+  passed: boolean;
+  /** Aggregate per-guard results, with detections accumulated across all leaves. */
+  results: GuardResult[];
+  /**
+   * Input with all string leaves replaced by their guard-redacted form
+   * where applicable. Non-string leaves (numbers, booleans, null,
+   * undefined, Date, RegExp, …) pass through unchanged. Object key
+   * order is preserved; array length is preserved.
+   */
+  redactedObject: T;
+  /**
+   * JSON-style path → detections found at that leaf. Paths use dot
+   * notation for object keys and `[i]` for array indices, matching the
+   * conventional JS-debugger style. The root path is the empty string.
+   *
+   * Example keys:
+   *   ""           — root (only if root itself is a string)
+   *   "title"      — top-level field
+   *   "history[0].sapPath" — array element field
+   *
+   * Only paths where ≥1 detection occurred appear in this map.
+   */
+  pathDetections: Record<string, Detection[]>;
+}
+
 /** A PII pattern definition */
 export interface PiiPattern {
   /** Entity type name (e.g., "CREDIT_CARD") */
