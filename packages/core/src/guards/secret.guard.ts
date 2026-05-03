@@ -4,7 +4,7 @@
  */
 
 import { BaseGuard } from "./base.guard";
-import type { GuardConfig, GuardResult, Detection, Confidence } from "../types";
+import type { GuardConfig, GuardResult, Detection, Confidence, RedactContext } from "../types";
 import { ALL_SECRET_PATTERNS } from "../patterns/secrets/index";
 import { shannonEntropy } from "../validators/checksums";
 
@@ -32,7 +32,8 @@ export class SecretGuard extends BaseGuard {
 
   async analyze(
     text: string,
-    config?: Partial<GuardConfig>
+    config?: Partial<GuardConfig>,
+    redactCtx?: RedactContext
   ): Promise<GuardResult> {
     const cfg = this.mergeConfig(config);
     const detections: Detection[] = [];
@@ -99,6 +100,6 @@ export class SecretGuard extends BaseGuard {
       }
     }
 
-    return this.buildResult(text, detections, cfg.mode);
+    return this.buildResult(text, detections, cfg.mode, redactCtx);
   }
 }

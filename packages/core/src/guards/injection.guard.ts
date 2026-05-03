@@ -4,7 +4,7 @@
  */
 
 import { BaseGuard } from "./base.guard";
-import type { GuardConfig, GuardResult, Detection } from "../types";
+import type { GuardConfig, GuardResult, Detection, RedactContext } from "../types";
 import { INJECTION_PATTERNS, INJECTION_KEYWORDS } from "../patterns/injection";
 import { findBestMatch } from "string-similarity";
 
@@ -15,7 +15,8 @@ export class InjectionGuard extends BaseGuard {
 
   async analyze(
     text: string,
-    config?: Partial<GuardConfig>
+    config?: Partial<GuardConfig>,
+    redactCtx?: RedactContext
   ): Promise<GuardResult> {
     const cfg = this.mergeConfig({ threshold: 0.6, mode: "block", ...config });
     const detections: Detection[] = [];
@@ -57,7 +58,7 @@ export class InjectionGuard extends BaseGuard {
       }
     }
 
-    return this.buildResult(text, detections, cfg.mode);
+    return this.buildResult(text, detections, cfg.mode, redactCtx);
   }
 
   private heuristicScore(text: string): number {

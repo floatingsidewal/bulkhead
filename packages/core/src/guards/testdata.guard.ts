@@ -5,7 +5,7 @@
  */
 
 import { BaseGuard } from "./base.guard";
-import type { GuardConfig, GuardResult, Detection } from "../types";
+import type { GuardConfig, GuardResult, Detection, RedactContext } from "../types";
 
 /** Patterns for detecting synthetic/test data */
 interface TestDataPattern {
@@ -102,7 +102,8 @@ export class TestDataGuard extends BaseGuard {
 
   async analyze(
     text: string,
-    config?: Partial<GuardConfig>
+    config?: Partial<GuardConfig>,
+    redactCtx?: RedactContext
   ): Promise<GuardResult> {
     const cfg = this.mergeConfig(config);
     const detections: Detection[] = [];

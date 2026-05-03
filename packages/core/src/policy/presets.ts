@@ -30,10 +30,35 @@ const MODERATE: PolicyDefinition = {
   testDataDetection: "flag",
 };
 
+/**
+ * Eval policy: synthesize realistic replacements for downstream eval /
+ * training corpora. Detects at moderate thresholds, replaces detected
+ * PII and secrets with synthesizer-supplied realistic values rather
+ * than `[REDACTED-TYPE]` placeholders so the output reads like a real
+ * document. Injection and leakage stay redacted (those should be
+ * obviously marked, not synthesized into something plausible).
+ *
+ * Use when producing privacy-safe but content-realistic eval inputs.
+ */
+const EVAL_POLICY: PolicyDefinition = {
+  name: "eval",
+  description:
+    "Synthesize realistic replacements for PII and secrets so sanitized content reads like a real document. Best for eval corpora and training datasets.",
+  guards: {
+    pii: { enabled: true, threshold: 0.5, mode: "synthesize" },
+    secret: { enabled: true, threshold: 0.7, mode: "synthesize" },
+    injection: { enabled: true, threshold: 0.7, mode: "redact" },
+    leakage: { enabled: true, threshold: 0.7, mode: "redact" },
+  },
+  riskThresholds: { critical: 0.9, high: 0.8, medium: 0.65, low: 0.5 },
+  testDataDetection: "flag",
+};
+
 /** All built-in policies indexed by name */
 export const BUILTIN_POLICIES: Record<string, PolicyDefinition> = {
   strict: STRICT,
   moderate: MODERATE,
+  eval: EVAL_POLICY,
 };
 
 /** Retrieve a built-in policy by name */

@@ -96,13 +96,12 @@ function mergeGuardConfig(
         : overlay.threshold;
   }
 
-  // Mode: block wins over redact
+  // Mode: stricter wins. block > synthesize > redact.
   if (overlay.mode !== undefined) {
-    if (overlay.mode === "block" || base.mode === "block") {
-      result.mode = "block";
-    } else {
-      result.mode = overlay.mode;
-    }
+    const order: Record<string, number> = { block: 3, synthesize: 2, redact: 1 };
+    const overlayRank = order[overlay.mode] ?? 0;
+    const baseRank = order[base.mode ?? "redact"] ?? 0;
+    result.mode = overlayRank >= baseRank ? overlay.mode : base.mode!;
   }
 
   // Entity types: intersection when both specify

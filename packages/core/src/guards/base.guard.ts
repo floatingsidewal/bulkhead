@@ -6,6 +6,10 @@ import type {
   GuardMode,
   DetectionSource,
   Disposition,
+  RedactionEntry,
+  Synthesizer,
+  SynthesizerContext,
+  RedactContext,
 } from "../types";
 
 const CONTEXT_RADIUS = 150;
@@ -15,6 +19,9 @@ const DEFAULT_CONFIG: GuardConfig = {
   threshold: 0.5,
   mode: "redact",
 };
+
+/** Re-export for guard subclasses (kept for backwards compat). */
+export type { RedactContext };
 
 /** Base class for guards that detect patterns in text */
 export abstract class BaseGuard implements Guard {
@@ -26,15 +33,32 @@ export abstract class BaseGuard implements Guard {
 
   abstract analyze(
     text: string,
-    config?: Partial<GuardConfig>
+    config?: Partial<GuardConfig>,
   ): Promise<GuardResult>;
 
-  /** Build a GuardResult from detections */
-  protected buildResult(
+  /**
+   * Build a GuardResult from detections. Mode-aware:
+   *
+   *   - `block`:      no transformation; passed=false on any detection.
+   *   - `redact`:     each detection replaced by `[REDACTED-TYPE]`.
+   *   - `synthesize`: each detection passed to the registry's synthesizer
+   *                   for its entityType. Falls back to placeholder if no
+   *                   synthesizer is registered. Same `original` always
+   *                   produces the same replacement within the call (via
+   *                   `consistencyMap`).
+   *
+   * The optional `redactCtx` parameter is supplied by the engine to share
+   * the registry and consistency map across guards in one scan call.
+   * When omitted, synthesize mode behaves identically to redact mode (no
+   * registered synthesizers are visible without an engine-supplied
+   * registry, so all replacements fall back to placeholders).
+   */
+  protected async buildResult(
     text: string,
     detections: Detection[],
-    mode: GuardMode
-  ): GuardResult {
+    mode: GuardMode,
+    redactCtx?: RedactContext,
+  ): Promise<GuardResult> {
     const passed = detections.length === 0;
     const score =
       detections.length > 0
@@ -57,8 +81,10 @@ export abstract class BaseGuard implements Guard {
       detections,
     };
 
-    if (mode === "redact" && !passed) {
-      result.redactedText = this.applyRedactions(text, detections);
+    if ((mode === "redact" || mode === "synthesize") && !passed) {
+      const applied = await this.applyRedactions(text, detections, mode, redactCtx);
+      result.redactedText = applied.text;
+      result.redactionMap = applied.redactionMap;
     }
 
     return result;
@@ -68,7 +94,7 @@ export abstract class BaseGuard implements Guard {
   protected extractContext(
     text: string,
     start: number,
-    end: number
+    end: number,
   ): string {
     const ctxStart = Math.max(0, start - CONTEXT_RADIUS);
     const ctxEnd = Math.min(text.length, end + CONTEXT_RADIUS);
@@ -80,7 +106,7 @@ export abstract class BaseGuard implements Guard {
     text: string,
     partial: Omit<Detection, "source" | "context" | "disposition">,
     source: DetectionSource = "regex",
-    disposition: Disposition = "confirmed"
+    disposition: Disposition = "confirmed",
   ): Detection {
     return {
       ...partial,
@@ -90,18 +116,100 @@ export abstract class BaseGuard implements Guard {
     };
   }
 
-  /** Replace detected text with [REDACTED-TYPE] markers */
-  protected applyRedactions(text: string, detections: Detection[]): string {
-    // Sort detections by start position descending so replacements don't shift offsets
-    const sorted = [...detections].sort((a, b) => b.start - a.start);
-    let result = text;
-    for (const detection of sorted) {
-      const replacement = `[REDACTED-${detection.entityType}]`;
-      result =
-        result.slice(0, detection.start) +
-        replacement +
-        result.slice(detection.end);
+  /**
+   * Apply redactions / synthesizations to text. Returns the modified
+   * text plus a per-detection RedactionEntry record.
+   *
+   * Detections are processed in **reverse order by start offset** so
+   * that replacements don't shift the offsets of pending detections.
+   * The redaction map is returned in **document order** (same order as
+   * `detections`).
+   */
+  protected async applyRedactions(
+    text: string,
+    detections: Detection[],
+    mode: GuardMode,
+    redactCtx?: RedactContext,
+  ): Promise<{ text: string; redactionMap: RedactionEntry[] }> {
+    const consistencyMap = redactCtx?.consistencyMap ?? new Map<string, string>();
+    const registry = redactCtx?.registry;
+
+    // Compute per-detection replacements. Order matters for synthesize
+    // mode (consistency map writes happen as we go), so we walk in
+    // document order to fill the map, then apply in reverse for slicing.
+    const redactionMap: RedactionEntry[] = [];
+    for (const detection of detections) {
+      const replacement = await this.computeReplacement(
+        detection,
+        mode,
+        registry,
+        consistencyMap,
+      );
+      redactionMap.push(replacement);
+      // Cache for any subsequent detection of the same original within this call.
+      consistencyMap.set(detection.text, replacement.replacement);
     }
-    return result;
+
+    // Apply in reverse order by start position.
+    const indexed = detections.map((d, i) => ({ d, entry: redactionMap[i] }));
+    const sorted = indexed.sort((a, b) => b.d.start - a.d.start);
+    let result = text;
+    for (const { d, entry } of sorted) {
+      result = result.slice(0, d.start) + entry.replacement + result.slice(d.end);
+    }
+    return { text: result, redactionMap };
+  }
+
+  /**
+   * Compute the replacement for one detection.
+   *
+   * Returns an inline-cached value from the consistency map if present
+   * (to keep multi-mention consistency cheap and stable), otherwise:
+   *   - mode `redact`     -> `[REDACTED-${entityType}]`
+   *   - mode `synthesize` -> registry-supplied synthesizer, or fallback
+   *                          to `[REDACTED-${entityType}]` if no
+   *                          synthesizer is registered for the type.
+   */
+  private async computeReplacement(
+    detection: Detection,
+    mode: GuardMode,
+    registry: RedactContext["registry"],
+    consistencyMap: Map<string, string>,
+  ): Promise<RedactionEntry> {
+    const cached = consistencyMap.get(detection.text);
+    if (cached) {
+      return {
+        original: detection.text,
+        replacement: cached,
+        entityType: detection.entityType,
+        // We don't know after the fact whether this came from a
+        // synthesizer or a placeholder, but the cached value is
+        // authoritative — emit `placeholder` if it matches the standard
+        // placeholder shape, else `synthesizer`.
+        via: cached === `[REDACTED-${detection.entityType}]` ? "placeholder" : "synthesizer",
+      };
+    }
+
+    if (mode === "synthesize" && registry) {
+      const synth: Synthesizer | undefined = registry.get(detection.entityType);
+      if (synth) {
+        const ctx: SynthesizerContext = { detection, consistencyMap };
+        const replacement = await synth(detection.text, ctx);
+        return {
+          original: detection.text,
+          replacement,
+          entityType: detection.entityType,
+          via: "synthesizer",
+        };
+      }
+    }
+
+    // redact mode, or synthesize-fallback when no synthesizer is registered.
+    return {
+      original: detection.text,
+      replacement: `[REDACTED-${detection.entityType}]`,
+      entityType: detection.entityType,
+      via: "placeholder",
+    };
   }
 }

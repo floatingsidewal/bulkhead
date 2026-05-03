@@ -1,22 +1,53 @@
-import type { Guard, GuardResult, EngineConfig, GuardConfig, ObjectScanResult, Detection } from "../types";
+import type {
+  Guard,
+  GuardResult,
+  EngineConfig,
+  GuardConfig,
+  Detection,
+  RedactContext,
+  RedactionEntry,
+  Synthesizer,
+  ObjectScanResult,
+} from "../types";
 import {
   CascadeClassifier,
   type CascadeConfig,
 } from "../cascade/cascade";
 import type { PolicyDefinition, RiskAssessment } from "../policy/types";
 import { assessRisk } from "../policy/risk";
+import { SynthesizerRegistry } from "../synthesizers/registry";
 
 /** Orchestrates multiple guards and aggregates results */
 export class GuardrailsEngine {
   private guards: Guard[] = [];
   private config: EngineConfig;
   private cascade: CascadeClassifier | null = null;
+  private synthRegistry: SynthesizerRegistry;
 
   constructor(config?: Partial<EngineConfig>) {
     this.config = {
       guards: {},
       ...config,
     };
+    this.synthRegistry = new SynthesizerRegistry();
+  }
+
+  /**
+   * Replace or extend the synthesizer registry. Registered synthesizers
+   * override defaults for the same entity type. Returns this for chaining.
+   *
+   * Synthesizers are looked up at scan time when a guard runs in
+   * `mode: "synthesize"`. See ./synthesizers/defaults.ts for the built-in
+   * set.
+   */
+  setSynthesizers(synths: Record<string, Synthesizer>): this {
+    this.synthRegistry.setMany(synths);
+    return this;
+  }
+
+  /** Access the active synthesizer registry (defaults + user-registered). */
+  get synthesizers(): SynthesizerRegistry {
+    return this.synthRegistry;
   }
 
   /** Register a guard with the engine */
@@ -38,8 +69,21 @@ export class GuardrailsEngine {
     return this.config.guards[guardName];
   }
 
-  /** Run all enabled guards against the input text */
-  async analyze(text: string): Promise<GuardResult[]> {
+  /**
+   * Run all enabled guards against the input text.
+   *
+   * When `redactCtx` is omitted the engine creates a default context
+   * (engine registry + fresh consistency map) so that direct callers
+   * and the regex-only fallback paths inside `deepScan()`/`modelScan()`
+   * all receive the synthesizer registry. This ensures `mode:
+   * "synthesize"` works correctly across every engine entry point, not
+   * only when called from `scan()`.
+   */
+  async analyze(text: string, redactCtx?: RedactContext): Promise<GuardResult[]> {
+    const ctx: RedactContext = redactCtx ?? {
+      registry: this.synthRegistry,
+      consistencyMap: new Map<string, string>(),
+    };
     const results: GuardResult[] = [];
 
     for (const guard of this.guards) {
@@ -50,31 +94,92 @@ export class GuardrailsEngine {
         continue;
       }
 
-      const result = await guard.analyze(text, guardConfig);
+      const result = await guard.analyze(text, guardConfig, ctx);
       results.push(result);
     }
 
     return results;
   }
 
-  /** Run all guards and return a single pass/fail with all detections */
-  async scan(text: string): Promise<{
+  /**
+   * Run all guards and return a single pass/fail with all detections.
+   *
+   * When any guard runs in `mode: "redact"` or `mode: "synthesize"`,
+   * the engine creates a per-call shared `consistencyMap` and passes
+   * its synthesizer registry to every guard. This guarantees that the
+   * same original value across detections from different guards
+   * collapses to the same replacement (true cross-guard consistency
+   * rather than the pre-Phase-6 behavior where the last guard's
+   * `redactedText` won and earlier guards' redactions were lost).
+   *
+   * The aggregate `redactedText` reflects all guards' redactions in a
+   * single output. The aggregate `redactionMap` is ordered by each
+   * entry's `start` offset (document order), rather than by
+   * guard-iteration order.
+   */
+  async scan(
+    text: string,
+    redactCtx?: RedactContext,
+  ): Promise<{
     passed: boolean;
     results: GuardResult[];
     redactedText?: string;
+    redactionMap?: RedactionEntry[];
   }> {
-    const results = await this.analyze(text);
+    const ctx: RedactContext = redactCtx ?? {
+      registry: this.synthRegistry,
+      consistencyMap: new Map<string, string>(),
+    };
+    const results = await this.analyze(text, ctx);
     const passed = results.every((r) => r.passed);
 
-    // Build redacted text by applying all redactions
+    // Aggregate redactedText across guards. Strategy: collect ALL
+    // detections from ALL guards into a single list, then perform one
+    // unified redaction pass against the original text using the same
+    // consistency map. This avoids the prior bug where per-guard
+    // redactions clobbered each other.
     let redactedText: string | undefined;
-    for (const result of results) {
-      if (result.redactedText) {
-        redactedText = result.redactedText;
+    const aggregateMap: RedactionEntry[] = [];
+    const allRedactingGuards = results.filter(
+      (r) => r.redactedText !== undefined && r.redactionMap !== undefined,
+    );
+
+    if (allRedactingGuards.length === 1) {
+      // Single redacting guard: trust its output verbatim. Cheap and
+      // identical to the multi-guard path for this case.
+      redactedText = allRedactingGuards[0].redactedText;
+      aggregateMap.push(...allRedactingGuards[0].redactionMap!);
+    } else if (allRedactingGuards.length > 1) {
+      // Multiple guards redacted: gather all detections, sort by start
+      // descending, apply replacements once. The consistency map is
+      // already shared so synthesizers produce stable values.
+      const allDetections: Array<{ d: Detection; entry: RedactionEntry }> = [];
+      for (const r of allRedactingGuards) {
+        const map = r.redactionMap!;
+        for (let i = 0; i < r.detections.length; i++) {
+          allDetections.push({ d: r.detections[i], entry: map[i] });
+        }
+      }
+      // Apply in reverse start order; collect output entries in
+      // document order for the aggregate map.
+      const sorted = [...allDetections].sort((a, b) => b.d.start - a.d.start);
+      let result = text;
+      for (const { d, entry } of sorted) {
+        result = result.slice(0, d.start) + entry.replacement + result.slice(d.end);
+      }
+      redactedText = result;
+      const docOrder = [...allDetections].sort((a, b) => a.d.start - b.d.start);
+      for (const { entry } of docOrder) {
+        aggregateMap.push(entry);
       }
     }
 
-    return { passed, results, redactedText };
+    return {
+      passed,
+      results,
+      redactedText,
+      redactionMap: aggregateMap.length > 0 ? aggregateMap : undefined,
+    };
   }
 
   /** Get list of registered guard names */
@@ -127,16 +232,17 @@ export class GuardrailsEngine {
   /** Run all guards and return risk assessment alongside results */
   async policyScan(
     text: string,
-    policy: PolicyDefinition
+    policy: PolicyDefinition,
   ): Promise<{
     passed: boolean;
     risk: RiskAssessment;
     results: GuardResult[];
     redactedText?: string;
+    redactionMap?: RedactionEntry[];
   }> {
-    const { passed, results, redactedText } = await this.scan(text);
+    const { passed, results, redactedText, redactionMap } = await this.scan(text);
     const risk = assessRisk(results, policy);
-    return { passed, risk, results, redactedText };
+    return { passed, risk, results, redactedText, redactionMap };
   }
 
   /** Clean up resources (terminate BERT worker, etc.) */
@@ -162,12 +268,11 @@ export class GuardrailsEngine {
    *   - Plain objects: each entry walked with key appended to path.
    *     Object key order is preserved.
    *
-   * Cross-leaf consistency: each leaf is scanned independently. In
-   * `mode: "redact"` this is irrelevant (all detections of the same
-   * entity type produce the same `[REDACTED-TYPE]` placeholder). When
-   * `mode: "synthesize"` ships (RFC-001), the consistency map will be
-   * threaded through scanObject so the same original value produces
-   * the same synthetic value across all leaves of one call.
+   * Cross-leaf consistency: a single `consistencyMap` is created for
+   * the entire `scanObject` call and threaded through every leaf scan.
+   * In `mode: "synthesize"` (RFC-001), the same original value
+   * produces the same synthetic replacement across all leaves of one
+   * call.
    *
    * @param input  Any JSON-serializable structure, or a string. Generic
    *               type `T` is preserved on `redactedObject`.
@@ -180,6 +285,14 @@ export class GuardrailsEngine {
     const pathDetections: Record<string, Detection[]> = {};
     let allPassed = true;
 
+    // Share one consistency map and registry across all leaf scans so
+    // that the same original value produces the same synthetic
+    // replacement everywhere in the document (cross-leaf consistency).
+    const sharedCtx: RedactContext = {
+      registry: this.synthRegistry,
+      consistencyMap: new Map<string, string>(),
+    };
+
     const walk = async (value: unknown, path: string): Promise<unknown> => {
       // Non-string primitives, null, undefined: pass through.
       if (value === null || value === undefined) return value;
@@ -188,9 +301,9 @@ export class GuardrailsEngine {
         return value;
       }
 
-      // String leaf: scan it.
+      // String leaf: scan it using the shared context.
       if (t === "string") {
-        const { passed, results, redactedText } = await this.scan(value as string);
+        const { passed, results, redactedText } = await this.scan(value as string, sharedCtx);
         if (!passed) allPassed = false;
 
         const leafDetections: Detection[] = [];
