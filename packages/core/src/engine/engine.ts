@@ -69,8 +69,21 @@ export class GuardrailsEngine {
     return this.config.guards[guardName];
   }
 
-  /** Run all enabled guards against the input text */
+  /**
+   * Run all enabled guards against the input text.
+   *
+   * When `redactCtx` is omitted the engine creates a default context
+   * (engine registry + fresh consistency map) so that direct callers
+   * and the regex-only fallback paths inside `deepScan()`/`modelScan()`
+   * all receive the synthesizer registry. This ensures `mode:
+   * "synthesize"` works correctly across every engine entry point, not
+   * only when called from `scan()`.
+   */
   async analyze(text: string, redactCtx?: RedactContext): Promise<GuardResult[]> {
+    const ctx: RedactContext = redactCtx ?? {
+      registry: this.synthRegistry,
+      consistencyMap: new Map<string, string>(),
+    };
     const results: GuardResult[] = [];
 
     for (const guard of this.guards) {
@@ -81,7 +94,7 @@ export class GuardrailsEngine {
         continue;
       }
 
-      const result = await guard.analyze(text, guardConfig, redactCtx);
+      const result = await guard.analyze(text, guardConfig, ctx);
       results.push(result);
     }
 

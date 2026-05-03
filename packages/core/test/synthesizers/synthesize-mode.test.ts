@@ -206,6 +206,52 @@ describe("synthesize mode", () => {
   });
 
   // -------------------------------------------------------------------------
+  // engine.analyze() with synthesize mode
+  // -------------------------------------------------------------------------
+
+  describe("engine.analyze with synthesize mode", () => {
+    it("uses engine registry when called directly (no redactCtx argument)", async () => {
+      const engine = new GuardrailsEngine({
+        guards: { pii: { mode: "synthesize" } },
+      });
+      engine.addGuard(new PiiGuard({ entityTypes: ["EMAIL_ADDRESS"] }));
+      const results = await engine.analyze("contact: user@example.org");
+      const pii = results.find((r) => r.guardName === "pii");
+      expect(pii).toBeDefined();
+      expect(pii!.redactionMap).toBeDefined();
+      expect(pii!.redactionMap![0].via).toBe("synthesizer");
+      expect(pii!.redactionMap![0].replacement).toMatch(/@example\.com$/);
+    });
+
+    it("uses engine registry in deepScan() regex-only fallback (no cascade)", async () => {
+      // deepScan() falls back to analyze(text) when no cascade is initialized.
+      // After the fix, that path still receives the engine's synthesizer registry.
+      const engine = new GuardrailsEngine({
+        guards: { pii: { mode: "synthesize" } },
+      });
+      engine.addGuard(new PiiGuard({ entityTypes: ["EMAIL_ADDRESS"] }));
+      // No initCascade() call → deepScan falls back to analyze()
+      const results = await engine.deepScan("contact: user@example.org");
+      const pii = results.find((r) => r.guardName === "pii");
+      expect(pii).toBeDefined();
+      expect(pii!.redactionMap).toBeDefined();
+      expect(pii!.redactionMap![0].via).toBe("synthesizer");
+    });
+
+    it("uses engine registry in modelScan() regex-only fallback (no cascade)", async () => {
+      const engine = new GuardrailsEngine({
+        guards: { pii: { mode: "synthesize" } },
+      });
+      engine.addGuard(new PiiGuard({ entityTypes: ["EMAIL_ADDRESS"] }));
+      const results = await engine.modelScan("contact: user@example.org");
+      const pii = results.find((r) => r.guardName === "pii");
+      expect(pii).toBeDefined();
+      expect(pii!.redactionMap).toBeDefined();
+      expect(pii!.redactionMap![0].via).toBe("synthesizer");
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Cross-guard consistency
   // -------------------------------------------------------------------------
 
