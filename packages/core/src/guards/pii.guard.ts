@@ -4,7 +4,7 @@
  */
 
 import { BaseGuard } from "./base.guard";
-import type { GuardConfig, GuardResult, Detection, PiiPattern , RedactContext } from "../types";
+import type { GuardConfig, GuardResult, Detection, PiiPattern, RedactContext } from "../types";
 import { ALL_PII_PATTERNS } from "../patterns/pii";
 
 const CONTEXT_WINDOW = 100; // characters before/after match to search for context words
