@@ -1,6 +1,105 @@
 # API Reference
 
+## Core Engine API
+
+`@floatingsidewal/bulkhead-core` exposes a `GuardrailsEngine` class for use as a library. This is the same engine the HTTP and MCP servers wrap; consumers embedding bulkhead directly (eg. eval-corpus harvesters, custom CLI tools) call these methods.
+
+```ts
+import { createEngine, getPolicy } from "@bulkhead-ai/core";
+
+const engine = createEngine({ policy: "moderate" });
+const result = await engine.scan("Email: john@example.com");
+console.log(result.redactedText); // "Email: [REDACTED-EMAIL_ADDRESS]"
+```
+
+### `engine.scan(text)`
+
+**Layer 1 only.** Runs all enabled regex-based guards. Sub-millisecond latency.
+
+```ts
+async scan(text: string): Promise<{
+  passed: boolean;
+  results: GuardResult[];
+  redactedText?: string;
+}>
+```
+
+| Field | Description |
+|---|---|
+| `passed` | `true` iff every guard passed (no detections above its threshold) |
+| `results` | One `GuardResult` per registered guard, with detections + scores |
+| `redactedText` | Present iff any guard ran in `mode: "redact"` and produced replacements |
+
+Use `scan` when you want the cheapest possible detection pass, or you've already decided regex coverage is sufficient.
+
+### `engine.modelScan(text)`
+
+**Layer 1 + Layer 2.** Runs regex first, then escalates ambiguous tokens to the BERT model. ~20-50ms latency on warmed model. Returns the same shape as `scan`, but detections may include `source: "bert"`.
+
+```ts
+async modelScan(text: string): Promise<GuardResult[]>
+```
+
+Requires `engine.initCascade()` to have been called and the BERT model loaded. The first `modelScan` call after engine creation triggers model load (~1-2s cold-start); subsequent calls are warm.
+
+Use `modelScan` for higher-recall PII detection (especially `PERSON_NAME`, `LOCATION`) without the latency cost of an LLM call.
+
+### `engine.deepScan(text)`
+
+**Layer 1 + 2 + 3.** Full cascade: regex, BERT, then LLM disambiguation for genuinely-ambiguous spans. ~500ms-2s latency depending on the LLM provider and how many spans escalate.
+
+```ts
+async deepScan(text: string): Promise<GuardResult[]>
+```
+
+Requires `engine.initCascade()` with `llmEnabled: true` and an `llmProvider` configured. See `docs/deployment.md` for provider setup.
+
+Use `deepScan` for the highest-recall, lowest-false-positive output — typically for compliance audits, not per-keystroke scanning.
+
+### `engine.policyScan(text, policy)`
+
+Runs `scan` and produces a **risk assessment** alongside the standard results.
+
+```ts
+async policyScan(text: string, policy: PolicyDefinition): Promise<{
+  passed: boolean;
+  risk: RiskAssessment;
+  results: GuardResult[];
+  redactedText?: string;
+}>
+```
+
+The `risk` field contains:
+
+- `level`: `"critical" | "high" | "medium" | "low" | "none"`
+- `score`: aggregate 0-1
+- `guards`: per-guard breakdown
+- `issues`: classified detections grouped by category
+- `testDataFlags`: synthetic-data detections (eg. `00000000-eval-...` GUIDs)
+
+Use `policyScan` when consumers need a summary judgment ("is this content safe to send to an LLM") rather than raw detection lists.
+
+### Lifecycle
+
+```ts
+const engine = createEngine({ policy: "strict" });
+
+// Optional: initialize the cascade for modelScan / deepScan
+engine.initCascade({ bertEnabled: true });
+
+// Ready check: returns true once BERT (if enabled) has loaded
+await waitFor(() => engine.cascadeReady);
+
+// ... scans ...
+
+// Clean up the BERT worker thread
+await engine.dispose();
+```
+
+---
+
 ## HTTP REST Endpoints
+
 
 The HTTP server runs on Fastify at port 3000 (configurable via `BULKHEAD_PORT`). All `/v1/*` endpoints accept and return JSON.
 
