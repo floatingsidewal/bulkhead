@@ -49,6 +49,78 @@ describe("PiiGuard", () => {
     });
   });
 
+  describe("GUIDs / UUIDs", () => {
+    it("detects canonical lowercase GUID", async () => {
+      const result = await guard.analyze(
+        "Subscription: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      );
+      expect(result.detections.some((d) => d.entityType === "GUID")).toBe(true);
+    });
+
+    it("detects canonical uppercase GUID", async () => {
+      const result = await guard.analyze(
+        "Tenant: AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+      );
+      expect(result.detections.some((d) => d.entityType === "GUID")).toBe(true);
+    });
+
+    it("detects multiple GUIDs in one string", async () => {
+      const result = await guard.analyze(
+        "Sub aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee Tenant 11111111-2222-3333-4444-555555555555 Object 99999999-8888-7777-6666-555555555555",
+      );
+      const guidDetections = result.detections.filter((d) => d.entityType === "GUID");
+      expect(guidDetections.length).toBe(3);
+    });
+
+    it("does not match strings shorter than canonical 36 chars", async () => {
+      const result = await guard.analyze(
+        "short: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee (35 chars, missing trailing hex)",
+      );
+      const guidDetections = result.detections.filter((d) => d.entityType === "GUID");
+      expect(guidDetections).toHaveLength(0);
+    });
+
+    it("does not match without dashes", async () => {
+      const result = await guard.analyze("dashless: aaaaaaaabbbbccccddddeeeeeeeeeeee");
+      const guidDetections = result.detections.filter((d) => d.entityType === "GUID");
+      expect(guidDetections).toHaveLength(0);
+    });
+
+    it("does not match with wrong segment lengths (8-4-4-4-13)", async () => {
+      const result = await guard.analyze("bad: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeeea");
+      const guidDetections = result.detections.filter((d) => d.entityType === "GUID");
+      expect(guidDetections).toHaveLength(0);
+    });
+
+    it("redacted GUID does not false-positive as MEDICAL_LICENSE", async () => {
+      // The default GUID synthesizer emits e.g.
+      //   00000000-redacted-89bd-0000-e3d868e80000
+      // which contains hex chunks like "ea7927800" that previously
+      // matched the MEDICAL_LICENSE regex `[abc...][a-zA-Z]\d{7}`.
+      // With the GUID detector landed at score 0.7 (vs MEDICAL_LICENSE 0.4),
+      // the GUID is recognized and synthesized in one pass, so the
+      // synthesized output is never re-scanned and never flagged as
+      // MEDICAL_LICENSE in a normal engine.scan() flow.
+      const guard2 = new PiiGuard();
+      const result = await guard2.analyze(
+        "Tenant 11111111-2222-3333-4444-555555555555",
+        { enabled: true, threshold: 0.5, mode: "redact" },
+      );
+      // Under threshold 0.5, GUID (0.7) detects, MEDICAL_LICENSE (0.4) does not.
+      expect(result.detections.some((d) => d.entityType === "GUID")).toBe(true);
+      expect(result.detections.some((d) => d.entityType === "MEDICAL_LICENSE")).toBe(false);
+    });
+
+    it("example subscription ID context boosts confidence", async () => {
+      const result = await guard.analyze(
+        "example subscription aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee is at quota.",
+      );
+      const guidDetections = result.detections.filter((d) => d.entityType === "GUID");
+      expect(guidDetections.length).toBeGreaterThan(0);
+      expect(guidDetections[0].score).toBeGreaterThanOrEqual(0.7);
+    });
+  });
+
   describe("IBAN", () => {
     it("detects valid IBAN", async () => {
       const result = await guard.analyze("IBAN: GB29 NWBK 6016 1331 9268 19");

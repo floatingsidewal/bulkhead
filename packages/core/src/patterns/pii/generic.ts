@@ -145,6 +145,53 @@ export const DATE_TIME: PiiPattern = {
   baseScore: 0.3,
 };
 
+/**
+ * Canonical 8-4-4-4-12 hex GUID / UUID. Matches both lowercase and
+ * uppercase. Validates the 4-bit version nibble (versions 1-8) loosely
+ * by accepting any hex digit, then leaves stricter validation to the
+ * (optional) `validate` callback below — we only check that the
+ * matched string is exactly 36 characters and that the dashes are at
+ * the right positions, which the regex already guarantees.
+ *
+ * Score is set high (0.7) because canonical GUID format is highly
+ * specific: the chance of a non-GUID 36-character string randomly
+ * matching this pattern is negligible. No `validate` callback is
+ * needed because the regex itself enforces the format.
+ *
+ * Why not lower the score and rely on context words? Because in
+ * structured data (JSON, XML, log lines) GUIDs frequently appear
+ * without nearby keywords like "guid" or "uuid" — they're embedded in
+ * field values, URLs, headers, etc. — so keyword-based scoring would
+ * miss most real-world matches.
+ *
+ * The `GUID` synthesizer (already in DEFAULT_SYNTHESIZERS) emits
+ * `00000000-redacted-XXXX-0000-NNNNNNNNNNNN` which is intentionally
+ * non-canonical — downstream scanners can flag it as
+ * `TEST_DATA_GUID` rather than as a real GUID, and bulkhead's own
+ * MEDICAL_LICENSE / SSN regexes won't match the synthesized output.
+ */
+export const GUID: PiiPattern = {
+  entityType: "GUID",
+  patterns: [
+    /\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b/g,
+  ],
+  contextWords: [
+    "guid",
+    "uuid",
+    "id",
+    "subscription",
+    "tenant",
+    "object",
+    "resource",
+    "correlation",
+    "request",
+    "trace",
+    "session",
+  ],
+  baseConfidence: "high",
+  baseScore: 0.7,
+};
+
 /** All generic PII patterns */
 export const GENERIC_PATTERNS: PiiPattern[] = [
   CREDIT_CARD,
@@ -156,4 +203,5 @@ export const GENERIC_PATTERNS: PiiPattern[] = [
   URL,
   CRYPTO,
   DATE_TIME,
+  GUID,
 ];
