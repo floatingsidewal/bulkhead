@@ -4,7 +4,7 @@
  */
 
 import { BaseGuard } from "./base.guard";
-import type { GuardConfig, GuardResult, Detection, PiiPattern } from "../types";
+import type { GuardConfig, GuardResult, Detection, PiiPattern , RedactContext } from "../types";
 import { ALL_PII_PATTERNS } from "../patterns/pii";
 
 const CONTEXT_WINDOW = 100; // characters before/after match to search for context words
@@ -37,11 +37,12 @@ export class PiiGuard extends BaseGuard {
 
   async analyze(
     text: string,
-    config?: Partial<GuardConfig>
+    config?: Partial<GuardConfig>,
+    redactCtx?: RedactContext,
   ): Promise<GuardResult> {
     const cfg = this.mergeConfig(config);
     const detections = this.detectAll(text, cfg.threshold);
-    return this.buildResult(text, detections, cfg.mode);
+    return this.buildResult(text, detections, cfg.mode, redactCtx);
   }
 
   private detectAll(text: string, threshold: number): Detection[] {

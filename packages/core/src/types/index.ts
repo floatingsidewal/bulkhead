@@ -45,10 +45,78 @@ export interface GuardResult {
   detections: Detection[];
   /** Modified text with redactions applied (if applicable) */
   redactedText?: string;
+  /**
+   * Per-detection record of original → replacement, in document order.
+   * Populated when the guard ran in mode `redact` or `synthesize`. Each
+   * entry includes the entity type and whether the replacement came
+   * from a synthesizer or the placeholder fallback.
+   */
+  redactionMap?: RedactionEntry[];
 }
 
-/** Guard mode: block rejects the input, redact sanitizes it */
-export type GuardMode = "block" | "redact";
+/**
+ * Guard mode:
+ *  - `block`:      input is rejected (passed: false, no transformation).
+ *  - `redact`:     detected entities are replaced with `[REDACTED-TYPE]`.
+ *  - `synthesize`: detected entities are replaced with realistic synthetic
+ *                  values from the engine's SynthesizerRegistry. Within one
+ *                  scan call, the same original value maps to the same
+ *                  synthetic value (consistency map).
+ *
+ * Stricter wins in policy merge: block > synthesize > redact.
+ */
+export type GuardMode = "block" | "redact" | "synthesize";
+
+/**
+ * One row in a guard's redaction map. Records the original detected text,
+ * the replacement value emitted, the entity type, and which strategy
+ * produced the replacement.
+ */
+export interface RedactionEntry {
+  /** The original (detected) value as it appeared in the input. */
+  original: string;
+  /** The value substituted into the redacted output. */
+  replacement: string;
+  /** The entity type from the underlying detection. */
+  entityType: string;
+  /**
+   * How the replacement was produced:
+   *  - `placeholder`: the standard `[REDACTED-TYPE]` form.
+   *  - `synthesizer`: a synthesizer (default or user-registered) emitted
+   *                   a realistic value.
+   */
+  via: "placeholder" | "synthesizer";
+}
+
+/**
+ * Per-call context passed to a Synthesizer.
+ *
+ * The `consistencyMap` is shared across every detection in one scan call
+ * (and across guards within that call). Synthesizers read from it before
+ * generating new values so the same original always produces the same
+ * synthetic replacement within one document.
+ */
+export interface SynthesizerContext {
+  /** The detection that produced this call. */
+  detection: Detection;
+  /**
+   * Within-call original→replacement map. Synthesizers should consult
+   * this before generating new output. The engine writes back to it
+   * automatically after the synthesizer returns.
+   */
+  consistencyMap: Map<string, string>;
+}
+
+/**
+ * Produce a synthetic replacement for one detected entity.
+ *
+ * Pure function. Must NOT call back into the engine. Sync by default;
+ * async is allowed for synthesizers that consult external registries.
+ */
+export type Synthesizer = (
+  original: string,
+  ctx: SynthesizerContext,
+) => string | Promise<string>;
 
 /** Configuration for a guard */
 export interface GuardConfig {
@@ -60,12 +128,44 @@ export interface GuardConfig {
   mode: GuardMode;
 }
 
+/**
+ * Per-call context for redaction / synthesis. The engine constructs this
+ * once per `scan()` call so all guards share a synthesizer registry and
+ * consistency map.
+ *
+ * Type is opaque here to avoid a circular import; the implementation
+ * lives in `synthesizers/registry.ts`.
+ */
+export interface RedactContext {
+  /** Engine-supplied SynthesizerRegistry. */
+  registry?: {
+    get(entityType: string): Synthesizer | undefined;
+    has(entityType: string): boolean;
+  };
+  /** Within-call original→replacement map shared across guards. */
+  consistencyMap?: Map<string, string>;
+}
+
 /** A guard analyzes text and returns results */
 export interface Guard {
   /** Unique name for this guard */
   readonly name: string;
-  /** Analyze text and return results */
-  analyze(text: string, config?: Partial<GuardConfig>): Promise<GuardResult>;
+  /**
+   * Analyze text and return results.
+   *
+   * The optional `redactCtx` parameter is supplied by the engine when
+   * one or more guards may run in `mode: "synthesize"`. It carries the
+   * shared SynthesizerRegistry and the per-call consistency map so that
+   * detections of the same value across multiple guards collapse to the
+   * same synthetic replacement. Existing callers that pass only
+   * (text, config) continue to work — synthesize mode without a
+   * registry falls back to placeholder replacement.
+   */
+  analyze(
+    text: string,
+    config?: Partial<GuardConfig>,
+    redactCtx?: RedactContext,
+  ): Promise<GuardResult>;
 }
 
 /** Configuration for the guardrails engine */

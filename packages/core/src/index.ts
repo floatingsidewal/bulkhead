@@ -33,7 +33,27 @@ export type {
   TacticName,
   TacticResult,
   Tactic,
+  RedactContext,
+  RedactionEntry,
+  Synthesizer,
+  SynthesizerContext,
 } from "./types";
+
+// Synthesizer registry + defaults (Phase 6 — synthesize mode)
+export {
+  SynthesizerRegistry,
+  DEFAULT_SYNTHESIZERS,
+  synthEmail,
+  synthPersonName,
+  synthPhone,
+  synthCreditCard,
+  synthIpAddress,
+  synthUrl,
+  synthIban,
+  synthMac,
+  synthCrypto,
+  synthGuid,
+} from "./synthesizers";
 
 // Cascade types re-exported for config convenience
 export type { CascadeConfig } from "./cascade/cascade";

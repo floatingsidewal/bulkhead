@@ -4,7 +4,7 @@
  */
 
 import { BaseGuard } from "./base.guard";
-import type { GuardConfig, GuardResult, Detection } from "../types";
+import type { GuardConfig, GuardResult, Detection , RedactContext } from "../types";
 import { LEAKAGE_PATTERNS, LEAKAGE_KEYWORDS } from "../patterns/injection";
 import { findBestMatch } from "string-similarity";
 
@@ -13,7 +13,8 @@ export class LeakageGuard extends BaseGuard {
 
   async analyze(
     text: string,
-    config?: Partial<GuardConfig>
+    config?: Partial<GuardConfig>,
+    redactCtx?: RedactContext
   ): Promise<GuardResult> {
     const cfg = this.mergeConfig({ threshold: 0.6, mode: "block", ...config });
     const detections: Detection[] = [];
@@ -60,6 +61,6 @@ export class LeakageGuard extends BaseGuard {
       }
     }
 
-    return this.buildResult(text, detections, cfg.mode);
+    return this.buildResult(text, detections, cfg.mode, redactCtx);
   }
 }
