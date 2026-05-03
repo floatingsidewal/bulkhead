@@ -4,7 +4,7 @@
  */
 
 import { BaseGuard } from "./base.guard";
-import type { GuardConfig, GuardResult, Detection , RedactContext } from "../types";
+import type { GuardConfig, GuardResult, Detection, RedactContext } from "../types";
 import { INJECTION_PATTERNS, INJECTION_KEYWORDS } from "../patterns/injection";
 import { findBestMatch } from "string-similarity";
 
