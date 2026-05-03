@@ -99,8 +99,9 @@ export class GuardrailsEngine {
    * `redactedText` won and earlier guards' redactions were lost).
    *
    * The aggregate `redactedText` reflects all guards' redactions in a
-   * single output. The aggregate `redactionMap` is the concatenation
-   * of per-guard maps in guard-iteration order.
+   * single output. The aggregate `redactionMap` is ordered by each
+   * entry's `start` offset (document order), rather than by
+   * guard-iteration order.
    */
   async scan(text: string): Promise<{
     passed: boolean;
