@@ -5,7 +5,7 @@
  */
 
 import { BaseGuard } from "./base.guard";
-import type { GuardConfig, GuardResult, Detection , RedactContext } from "../types";
+import type { GuardConfig, GuardResult, Detection, RedactContext } from "../types";
 
 /** Patterns for detecting synthetic/test data */
 interface TestDataPattern {
