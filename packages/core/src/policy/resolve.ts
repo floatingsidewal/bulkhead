@@ -74,6 +74,30 @@ function mergePolicies(
     result.testDataDetection = overlay.testDataDetection;
   }
 
+  // Temporal policy: stricter wins.
+  //   rebase-relative-to-earliest > rebase-year-zero > preserve > undefined
+  // Stricter wins because a more aggressive temporal transformation
+  // strictly removes more correlatable signal than a less aggressive one.
+  const TEMPORAL_RANK: Record<string, number> = {
+    "rebase-relative-to-earliest": 3,
+    "rebase-year-zero": 2,
+    preserve: 1,
+  };
+  const baseRank = TEMPORAL_RANK[base.temporalPolicy?.mode ?? "preserve"] ?? 0;
+  const overlayRank = TEMPORAL_RANK[overlay.temporalPolicy?.mode ?? "preserve"] ?? 0;
+  if (overlayRank > baseRank) {
+    result.temporalPolicy = overlay.temporalPolicy;
+  } else if (baseRank > overlayRank) {
+    result.temporalPolicy = base.temporalPolicy;
+  } else {
+    // Equal rank: take the lower-precision (stricter) of the two.
+    const PREC_RANK: Record<string, number> = { ms: 1, second: 2, minute: 3, hour: 4, day: 5 };
+    const basePrec = PREC_RANK[base.temporalPolicy?.precision ?? "ms"] ?? 1;
+    const overlayPrec = PREC_RANK[overlay.temporalPolicy?.precision ?? "ms"] ?? 1;
+    result.temporalPolicy =
+      overlayPrec >= basePrec ? overlay.temporalPolicy : base.temporalPolicy;
+  }
+
   return result;
 }
 

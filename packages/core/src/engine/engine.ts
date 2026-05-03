@@ -13,8 +13,9 @@ import {
   CascadeClassifier,
   type CascadeConfig,
 } from "../cascade/cascade";
-import type { PolicyDefinition, RiskAssessment } from "../policy/types";
+import type { PolicyDefinition, RiskAssessment, TemporalPolicy } from "../policy/types";
 import { assessRisk } from "../policy/risk";
+import { computeTemporalReplacements } from "../policy/temporal";
 import { SynthesizerRegistry } from "../synthesizers/registry";
 
 /** Orchestrates multiple guards and aggregates results */
@@ -23,6 +24,7 @@ export class GuardrailsEngine {
   private config: EngineConfig;
   private cascade: CascadeClassifier | null = null;
   private synthRegistry: SynthesizerRegistry;
+  private temporalPolicy: TemporalPolicy | undefined;
 
   constructor(config?: Partial<EngineConfig>) {
     this.config = {
@@ -48,6 +50,27 @@ export class GuardrailsEngine {
   /** Access the active synthesizer registry (defaults + user-registered). */
   get synthesizers(): SynthesizerRegistry {
     return this.synthRegistry;
+  }
+
+  /**
+   * Set the temporal policy applied to detected timestamps. Default is
+   * undefined (equivalent to `{ mode: "preserve" }` — no transformation).
+   *
+   * When set, every `engine.scan()` call applies the policy: detected
+   * `DATE_TIME` entities are rebased per the policy mode and the rebased
+   * values flow through the redaction pipeline via the per-call
+   * consistency map. Composes with synthesize mode (a date that's both
+   * rebased AND meant to be synthesized: temporal wins because it
+   * pre-populates the cache before guards run).
+   */
+  setTemporalPolicy(policy: TemporalPolicy | undefined): this {
+    this.temporalPolicy = policy;
+    return this;
+  }
+
+  /** Read the active temporal policy, if any. */
+  get temporalPolicyConfig(): TemporalPolicy | undefined {
+    return this.temporalPolicy;
   }
 
   /** Register a guard with the engine */
@@ -130,6 +153,26 @@ export class GuardrailsEngine {
       registry: this.synthRegistry,
       consistencyMap: new Map<string, string>(),
     };
+
+    // Temporal policy pre-pass: if a temporal policy is active, run a
+    // cheap detection-only pass to find DATE_TIME entities, compute
+    // their rebased forms, and seed the consistency map with them.
+    // When the real analyze() pass runs, the cached values are picked
+    // up by computeReplacement and used as redactions. Composes
+    // cleanly with synthesize mode (cache write here happens before
+    // any synthesizer is consulted, so temporal wins for dates).
+    if (this.temporalPolicy && this.temporalPolicy.mode !== "preserve") {
+      const detectionOnly = await this.analyze(text);
+      const allDetections: Detection[] = [];
+      for (const r of detectionOnly) {
+        allDetections.push(...r.detections);
+      }
+      const temporalMap = computeTemporalReplacements(allDetections, this.temporalPolicy);
+      for (const [original, rebased] of temporalMap) {
+        ctx.consistencyMap!.set(original, rebased);
+      }
+    }
+
     const results = await this.analyze(text, ctx);
     const passed = results.every((r) => r.passed);
 
