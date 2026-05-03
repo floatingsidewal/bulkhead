@@ -124,3 +124,61 @@
   - BERT layer: latency per request, memory footprint
   - Full cascade: end-to-end latency distribution
   - Scaling: concurrent request handling in container
+
+## Phase 6: Sanitization & Privacy Modes
+
+Bulkhead currently produces strong **detection** (regex + BERT + optional LLM) and basic **redaction-to-placeholder** (`[REDACTED-EMAIL_ADDRESS]`). Phase 6 extends this with **content-realistic synthesis** for downstream consumers (eval corpora, training data, demos), **temporal-policy transformations** for date/time privacy, and **structured-input handling** for callers that operate on JSON objects rather than raw strings.
+
+The phase grew out of the support-conductor eval-corpus pipeline, which needs:
+- Realistic synthetic replacements (so a sanitized triage case still reads like a real document)
+- Year-zero / relative-rebased timestamps (so case content is committable to git without leaking incident dates)
+- Object-shape preservation (so structured corpus YAML can be written without per-consumer recursion logic)
+
+These are general capabilities, not project-specific.
+
+- [ ] **6.1 RFC: Synthesize mode** *([docs/rfc-001-synthesize-mode.md](docs/rfc-001-synthesize-mode.md))*
+  - Add `mode: "synthesize"` to `GuardMode` (third option alongside `block` and `redact`)
+  - Per-call consistency map so `john@x.com` always maps to the same synthetic value within a document
+  - Default synthesizer registry shipping for `EMAIL_ADDRESS`, `PERSON_NAME`, `PHONE_NUMBER`, `CREDIT_CARD`, `IP_ADDRESS`, `URL`, `IBAN_CODE`, `MAC_ADDRESS`, `GUID` (using IETF/RFC documentation reservations where applicable)
+  - Custom synthesizers registerable via `engine.setSynthesizers()`
+  - New `eval` policy preset that requests `mode: "synthesize"` for all PII guards
+
+- [ ] **6.2 RFC: Temporal policy** *([docs/rfc-002-temporal-policy.md](docs/rfc-002-temporal-policy.md))*
+  - Add `temporalPolicy?: TemporalPolicy` to `PolicyDefinition`
+  - Three modes: `preserve` (current behavior), `rebase-year-zero` (replace year with `0001`, preserve month/day/time), `rebase-relative-to-earliest` (anchor all timestamps relative to a synthetic origin, preserve relative offsets)
+  - Configurable precision: `ms` (default), `second`, `minute`, `hour`, `day`
+  - Existing `strict` preset gains `rebase-year-zero`; `eval` preset gains `rebase-relative-to-earliest`
+
+- [ ] **6.3 Implementation: `scanObject<T>()`** for structured input
+  - New `engine.scanObject<T>(input: T): Promise<{ ...; redactedObject: T }>`
+  - Recursive walker: scans every string leaf, leaves numbers/booleans/nulls/dates untouched
+  - Preserves output shape exactly (object vs array, key order, nested structure)
+  - Accumulates one redaction map across the whole tree for cross-leaf consistency
+  - No path-matching or per-path policy in v1 — consumers handle field-level rules by pre/post-processing. Path matching can land in 6.7 if demand emerges.
+  - Lowest design risk in Phase 6. Can ship in parallel with the RFCs.
+
+- [ ] **6.4 Implementation: Synthesize mode** *(per RFC-001 after approval)*
+  - Type additions, `SynthesizerRegistry` class, default synthesizers
+  - `applyRedactions` mode-aware refactor in `packages/core/src/guards/base.guard.ts`
+  - Engine plumbing
+  - New `eval` preset
+  - Tests (positive, negative, false-positive, adversarial including consistency assertions)
+
+- [ ] **6.5 Implementation: Temporal policy** *(per RFC-002 after approval)*
+  - New `applyTemporalPolicy` function in `packages/core/src/guards/temporal.ts`
+  - ISO 8601 parsing and rebasing logic (UTC-normalized output)
+  - Engine wiring to invoke before/alongside `applyRedactions`
+  - Preset updates
+  - Tests including round-trip parsing assertions and total-ordering preservation
+
+- [ ] **6.6 Documentation: Core Engine API**
+  - Document existing `engine.scan()`, `engine.modelScan()`, `engine.deepScan()`, `engine.policyScan()` in `docs/api.md` (these are public methods today but undocumented)
+  - Add `engine.scanObject()`, `mode: "synthesize"`, `temporalPolicy` documentation as the implementations land
+  - Update `docs/policy.md` with the new `eval` preset
+  - Update `docs/guards.md` with the synthesize-mode behavior matrix
+
+- [ ] **6.7 (Stretch): Path-aware `scanObject` policies**
+  - `preservePaths: string[]` — JSON paths to skip detection entirely
+  - `synthesizePaths: string[]` — JSON paths that always go through `mode: "synthesize"`
+  - `hashPaths: string[]` — JSON paths whose values are replaced with a deterministic hash regardless of detection
+  - Only land if 6.3 lands and consumers ask for it; v1 of `scanObject` proves out the recursion model first.
