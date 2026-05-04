@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [VERSIONING.md](VERSIONING.md) for version numbering conventions.
 
+## [0.5.5] - 2026-05-04
+
+### Changed
+- Maintenance release: workspace version sync across all packages. No functional changes.
+
+## [0.5.4] - 2026-05-03
+
+### Added
+- Canonical 8-4-4-4-12 hex GUID/UUID detector in PiiGuard (score 0.7, high confidence). Closes a gap where the `synthGuid` synthesizer was registered by default but no detector emitted GUID detections.
+
 ## [0.5.3] - 2026-04-14
 
 ### Added
