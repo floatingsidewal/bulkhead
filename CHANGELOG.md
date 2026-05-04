@@ -2,10 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [VERSIONING.md](VERSIONING.md) for version numbering conventions.
 
-## [0.5.5] - 2026-05-04
+## [0.5.6] - 2026-05-04
 
 ### Changed
-- Maintenance release: workspace version sync across all packages. No functional changes.
+- chore: bump to 0.5.6 (repository recreation; omitted 0.5.5 due to npm provenance metadata mismatch after repo rip-and-replace)
+
+## [0.5.5] - 2026-05-04 (SKIPPED)
+
+### Note
+- Repository was deleted and recreated to remove sensitive data from PR diffs. Commit hash changed; npm provenance check incompatible with 0.5.5. Version skipped; publishing resumes at 0.5.6.
 
 ## [0.5.4] - 2026-05-03
 
