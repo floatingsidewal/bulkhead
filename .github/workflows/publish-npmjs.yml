@@ -20,8 +20,7 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org/'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+        # OIDC token is automatically used when no NODE_AUTH_TOKEN is provided
 
       - run: npm install -g npm@latest
       - run: npm ci
@@ -31,7 +30,7 @@ jobs:
       - name: Build server
         run: cd packages/server && npx tsup
 
-      - name: Publish @bulkhead-ai/core
+       - name: Publish @bulkhead-ai/core
         run: |
           cd packages/core
           node -e "
@@ -40,13 +39,7 @@ jobs:
             delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            npm publish --provenance --access public || echo "Version already published, skipping"
-          else
-            npm publish --access public || echo "Version already published, skipping"
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          npm publish --provenance --access public || echo "Version already published, skipping"
 
       - name: Publish @bulkhead-ai/server
         run: |
@@ -59,10 +52,4 @@ jobs:
             delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            npm publish --provenance --access public || echo "Version already published, skipping"
-          else
-            npm publish --access public || echo "Version already published, skipping"
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          npm publish --provenance --access public || echo "Version already published, skipping"
