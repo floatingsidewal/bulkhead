@@ -30,7 +30,7 @@ jobs:
       - name: Build server
         run: cd packages/server && npx tsup
 
-       - name: Publish @bulkhead-ai/core
+      - name: Publish @bulkhead-ai/core
         run: |
           cd packages/core
           node -e "
