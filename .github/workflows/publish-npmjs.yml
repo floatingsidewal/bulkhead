@@ -19,7 +19,10 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '24'
-          # No registry-url or always-auth — trusted publishing uses OIDC
+          registry-url: 'https://registry.npmjs.org/'
+        env:
+          # Fallback: use NPM_TOKEN if provided, otherwise OIDC
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || '' }}
 
       - run: npm install -g npm@latest
       - run: npm ci
@@ -28,10 +31,6 @@ jobs:
         run: cd packages/core && npx tsup
       - name: Build server
         run: cd packages/server && npx tsup
-
-      # Clean any .npmrc files so npm uses pure OIDC
-      - name: Clean all .npmrc files
-        run: rm -f ~/.npmrc .npmrc packages/core/.npmrc packages/server/.npmrc
 
       - name: Publish @bulkhead-ai/core
         run: |
