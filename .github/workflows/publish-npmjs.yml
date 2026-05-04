@@ -41,7 +41,11 @@ jobs:
             delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          npm publish $([ -z \"$NPM_TOKEN\" ] && echo \"--provenance\" || echo \"\") --access public || echo "Version already published, skipping"
+          if [ -z "$NPM_TOKEN" ]; then
+            npm publish --provenance --access public || echo "Version already published, skipping"
+          else
+            npm publish --access public || echo "Version already published, skipping"
+          fi
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN || '' }}
 
@@ -56,6 +60,10 @@ jobs:
             delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          npm publish $([ -z \"$NPM_TOKEN\" ] && echo \"--provenance\" || echo \"\") --access public || echo "Version already published, skipping"
+          if [ -z "$NPM_TOKEN" ]; then
+            npm publish --provenance --access public || echo "Version already published, skipping"
+          else
+            npm publish --access public || echo "Version already published, skipping"
+          fi
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN || '' }}
