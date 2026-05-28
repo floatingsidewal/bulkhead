@@ -20,10 +20,12 @@
     }
   },
   "group-pull-requests": true,
-  "linked-versions": [
+  "plugins": [
     {
-      "group": "bulkhead",
+      "type": "linked-versions",
+      "groupName": "bulkhead",
       "components": ["bulkhead", "bulkhead-core", "bulkhead-server"]
-    }
+    },
+    "node-workspace"
   ]
 }
