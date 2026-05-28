@@ -81,8 +81,13 @@ export abstract class BaseGuard implements Guard {
       detections,
     };
 
-    if ((mode === "redact" || mode === "synthesize") && !passed) {
-      const applied = await this.applyRedactions(text, detections, mode, redactCtx);
+    // Produce redactedText for any mode with detections.
+    // - "redact"/"synthesize": passed=false, redactedText populated (primary use case)
+    // - "block": passed=false, redactedText also populated so consumers that
+    //   prefer redaction over blocking can use it (e.g., SafeWright output protection)
+    if (!passed) {
+      const redactMode = mode === "synthesize" ? "synthesize" : "redact";
+      const applied = await this.applyRedactions(text, detections, redactMode, redactCtx);
       result.redactedText = applied.text;
       result.redactionMap = applied.redactionMap;
     }

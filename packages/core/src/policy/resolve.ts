@@ -174,6 +174,7 @@ export function policyToEngineConfig(policy: PolicyDefinition): {
       secret: { threshold: secret.threshold, mode: secret.mode },
       injection: { threshold: injection.threshold, mode: injection.mode },
       leakage: { threshold: leakage.threshold, mode: leakage.mode },
+      testdata: { mode: policy.testDataDetection === "strip" ? "redact" : "block" },
     },
   };
 }

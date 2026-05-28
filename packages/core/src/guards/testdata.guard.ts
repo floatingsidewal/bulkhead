@@ -105,7 +105,11 @@ export class TestDataGuard extends BaseGuard {
     config?: Partial<GuardConfig>,
     redactCtx?: RedactContext
   ): Promise<GuardResult> {
-    const cfg = this.mergeConfig(config);
+    // TestData guard defaults to informational ("block" = detect-only, no redaction).
+    // Only strips when explicitly configured with mode: "redact" or "synthesize"
+    // (set by policyToEngineConfig when testDataDetection === "strip").
+    const cfg = this.mergeConfig({ mode: "block", ...config });
+    const stripMode = cfg.mode === "redact" || cfg.mode === "synthesize";
     const detections: Detection[] = [];
 
     for (const pattern of TEST_DATA_PATTERNS) {
@@ -165,6 +169,12 @@ export class TestDataGuard extends BaseGuard {
 
     // Deduplicate overlapping detections
     const deduped = this.deduplicateDetections(detections);
+
+    // When mode is "redact" (strip), produce redacted text like other guards.
+    // Otherwise, return informational-only result (flag mode).
+    if (stripMode && deduped.length > 0) {
+      return this.buildResult(text, deduped, cfg.mode, redactCtx);
+    }
     return this.buildInformationalResult(text, deduped);
   }
 

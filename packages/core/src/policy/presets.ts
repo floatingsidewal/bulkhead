@@ -12,7 +12,7 @@ const STRICT: PolicyDefinition = {
     leakage: { enabled: true, threshold: 0.5, mode: "block" },
   },
   riskThresholds: { critical: 0.9, high: 0.7, medium: 0.5, low: 0.3 },
-  testDataDetection: "flag",
+  testDataDetection: "strip",
   temporalPolicy: { mode: "rebase-year-zero" },
 };
 
