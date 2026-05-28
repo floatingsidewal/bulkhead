@@ -1,0 +1,81 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      paths_released: ${{ steps.release.outputs.paths_released }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    runs-on: ubuntu-latest
+    environment: default
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - run: npm ci
+
+      - name: Build core
+        run: cd packages/core && npx tsup
+
+      - name: Build server
+        run: cd packages/server && npx tsup
+
+      - name: Publish @bulkhead-ai/core to npmjs
+        run: |
+          cd packages/core
+          node -e "
+            const p=require('./package.json');
+            p.name='@bulkhead-ai/core';
+            delete p.publishConfig;
+            require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
+          "
+          npm publish --provenance --access public || echo "Version already published, skipping"
+
+      - name: Publish @bulkhead-ai/server to npmjs
+        run: |
+          cd packages/server
+          node -e "
+            const p=require('./package.json');
+            p.name='@bulkhead-ai/server';
+            p.dependencies['@bulkhead-ai/core']=p.dependencies['@floatingsidewal/bulkhead-core'];
+            delete p.dependencies['@floatingsidewal/bulkhead-core'];
+            delete p.publishConfig;
+            require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
+          "
+          npm publish --provenance --access public || echo "Version already published, skipping"
+
+      - name: Publish to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git checkout -- packages/core/package.json packages/server/package.json
+          npm config set //npm.pkg.github.com/:_authToken=$NODE_AUTH_TOKEN
+          npm config set @floatingsidewal:registry=https://npm.pkg.github.com/
+          npm publish --workspace=@floatingsidewal/bulkhead-core --no-git-checks || echo "Already published"
+          npm publish --workspace=@floatingsidewal/bulkhead-server --no-git-checks || echo "Already published"
