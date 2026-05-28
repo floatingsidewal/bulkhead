@@ -312,6 +312,7 @@ The test suite includes an [adversarial test suite](test/adversarial/) covering 
 - [Policy Guide](docs/policy.md) -- Policies, risk assessment, test data detection, compliance overlays
 - [Deployment](docs/deployment.md) -- Five deployment scenarios with configuration and examples
 - [API Reference](docs/api.md) -- HTTP endpoints, MCP tools, environment variables
+- [Examples in Action](docs/examples-in-action.md) -- End-to-end demos for redaction, blocking, and injection handling
 - [Guards](docs/guards.md) -- Guard implementation details
 - [Patterns](docs/patterns.md) -- Detection pattern reference
 - [Testing](docs/testing.md) -- Test strategy and adversarial suite
