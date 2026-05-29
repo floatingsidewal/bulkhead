@@ -39,7 +39,8 @@ jobs:
             delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          npm publish --provenance --access public || echo "Version already published, skipping"
+          npm publish --provenance --access public 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::version already published, skipping" || exit "$code"; fi
 
       - name: Publish @bulkhead-ai/server
         run: |
@@ -52,4 +53,5 @@ jobs:
             delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          npm publish --provenance --access public || echo "Version already published, skipping"
+          npm publish --provenance --access public 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::version already published, skipping" || exit "$code"; fi
