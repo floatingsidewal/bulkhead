@@ -1,6 +1,6 @@
 {
   "name": "bulkhead",
-  "version": "0.5.7",
+  "version": "0.7.0",
   "private": true,
   "license": "MIT",
   "workspaces": [
