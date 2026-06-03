@@ -50,6 +50,14 @@ export interface GuardPolicyConfig {
   entityTypes?: string[];
   /** For SecretGuard: which secret types to detect */
   secretTypes?: string[];
+  /**
+   * Entity types to exclude from remediation (redaction/synthesis).
+   * Excluded entities are still detected and reported in results,
+   * but are NOT redacted or synthesized — original text is preserved.
+   * Useful for preserving technical identifiers (GUIDs, timestamps)
+   * while sanitizing personal PII.
+   */
+  excludeEntities?: string[];
 }
 
 /** Score thresholds that map aggregate scores to risk levels */

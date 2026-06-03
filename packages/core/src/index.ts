@@ -157,6 +157,17 @@ export function createEngine(config: BulkheadConfig = DEFAULT_CONFIG): Guardrail
     if (policy.temporalPolicy) {
       engine.setTemporalPolicy(policy.temporalPolicy);
     }
+
+    // Apply entity exclusions from all guards' excludeEntities config.
+    const allExclusions: string[] = [];
+    for (const guard of Object.values(policy.guards)) {
+      if (guard?.excludeEntities) {
+        allExclusions.push(...guard.excludeEntities);
+      }
+    }
+    if (allExclusions.length > 0) {
+      engine.setExcludeEntities(allExclusions);
+    }
   } else {
     // Legacy path: use config.guards directly
     if (config.guards.pii.enabled) {

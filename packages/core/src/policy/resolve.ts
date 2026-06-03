@@ -148,6 +148,15 @@ function mergeGuardConfig(
     }
   }
 
+  // Exclude entities: union (if either excludes a type, it stays excluded)
+  if (overlay.excludeEntities || base.excludeEntities) {
+    const merged = new Set([
+      ...(base.excludeEntities ?? []),
+      ...(overlay.excludeEntities ?? []),
+    ]);
+    result.excludeEntities = [...merged];
+  }
+
   return result;
 }
 
