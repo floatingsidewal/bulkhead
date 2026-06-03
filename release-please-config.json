@@ -27,5 +27,13 @@
       "components": ["bulkhead", "bulkhead-core", "bulkhead-server"]
     },
     "node-workspace"
+  ],
+  "prerelease-type": "preview",
+  "branches": [
+    {
+      "branch": "next",
+      "prerelease": true,
+      "prerelease-type": "preview"
+    }
   ]
 }

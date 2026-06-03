@@ -2,7 +2,7 @@ name: Release Please
 
 on:
   push:
-    branches: [main]
+    branches: [main, next]
 
 permissions:
   contents: write
@@ -20,6 +20,7 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          target-branch: ${{ github.ref_name }}
 
   publish:
     needs: release-please
@@ -46,6 +47,10 @@ jobs:
       - name: Build server
         run: cd packages/server && npx tsup
 
+      - name: Determine npm dist-tag
+        id: dist-tag
+        run: echo "tag=${{ github.ref_name == 'main' && 'latest' || 'next' }}" >> "$GITHUB_OUTPUT"
+
       - name: Publish @bulkhead-ai/core to npmjs
         run: |
           cd packages/core
@@ -55,7 +60,7 @@ jobs:
             delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          npm publish --provenance --access public 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
+          npm publish --provenance --access public --tag ${{ steps.dist-tag.outputs.tag }} 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
           if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::version already published, skipping" || exit "$code"; fi
 
       - name: Publish @bulkhead-ai/server to npmjs
@@ -69,7 +74,7 @@ jobs:
             delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          npm publish --provenance --access public 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
+          npm publish --provenance --access public --tag ${{ steps.dist-tag.outputs.tag }} 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
           if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::version already published, skipping" || exit "$code"; fi
 
       - name: Publish to GitHub Packages
@@ -80,6 +85,6 @@ jobs:
           npm config set //npm.pkg.github.com/:_authToken=$NODE_AUTH_TOKEN
           npm config set @floatingsidewal:registry=https://npm.pkg.github.com/
           for ws in @floatingsidewal/bulkhead-core @floatingsidewal/bulkhead-server; do
-            npm publish --workspace="$ws" --no-git-checks 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
+            npm publish --workspace="$ws" --no-git-checks --tag ${{ steps.dist-tag.outputs.tag }} 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
             if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::$ws already published, skipping" || exit "$code"; fi
           done
