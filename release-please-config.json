@@ -25,5 +25,13 @@
       "group": "bulkhead",
       "components": ["bulkhead", "bulkhead-core", "bulkhead-server"]
     }
+  ],
+  "prerelease-type": "preview",
+  "branches": [
+    {
+      "branch": "next",
+      "prerelease": true,
+      "prerelease-type": "preview"
+    }
   ]
 }

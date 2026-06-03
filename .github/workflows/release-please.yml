@@ -2,7 +2,7 @@ name: Release Please
 
 on:
   push:
-    branches: [main]
+    branches: [main, next]
 
 permissions:
   contents: write
@@ -20,6 +20,7 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          target-branch: ${{ github.ref_name }}
 
   publish:
     needs: release-please
@@ -46,6 +47,10 @@ jobs:
       - name: Build server
         run: cd packages/server && npx tsup
 
+      - name: Determine npm dist-tag
+        id: dist-tag
+        run: echo "tag=${{ github.ref_name == 'main' && 'latest' || 'next' }}" >> "$GITHUB_OUTPUT"
+
       - name: Publish @bulkhead-ai/core to npmjs
         run: |
           cd packages/core
@@ -55,7 +60,7 @@ jobs:
             delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          npm publish --provenance --access public || echo "Version already published, skipping"
+          npm publish --provenance --access public --tag ${{ steps.dist-tag.outputs.tag }} || echo "Version already published, skipping"
 
       - name: Publish @bulkhead-ai/server to npmjs
         run: |
@@ -68,7 +73,7 @@ jobs:
             delete p.publishConfig;
             require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           "
-          npm publish --provenance --access public || echo "Version already published, skipping"
+          npm publish --provenance --access public --tag ${{ steps.dist-tag.outputs.tag }} || echo "Version already published, skipping"
 
       - name: Publish to GitHub Packages
         env:
@@ -77,5 +82,5 @@ jobs:
           git checkout -- packages/core/package.json packages/server/package.json
           npm config set //npm.pkg.github.com/:_authToken=$NODE_AUTH_TOKEN
           npm config set @floatingsidewal:registry=https://npm.pkg.github.com/
-          npm publish --workspace=@floatingsidewal/bulkhead-core --no-git-checks || echo "Already published"
-          npm publish --workspace=@floatingsidewal/bulkhead-server --no-git-checks || echo "Already published"
+          npm publish --workspace=@floatingsidewal/bulkhead-core --no-git-checks --tag ${{ steps.dist-tag.outputs.tag }} || echo "Already published"
+          npm publish --workspace=@floatingsidewal/bulkhead-server --no-git-checks --tag ${{ steps.dist-tag.outputs.tag }} || echo "Already published"
