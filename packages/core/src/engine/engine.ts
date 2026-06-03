@@ -25,6 +25,7 @@ export class GuardrailsEngine {
   private cascade: CascadeClassifier | null = null;
   private synthRegistry: SynthesizerRegistry;
   private temporalPolicy: TemporalPolicy | undefined;
+  private _excludeEntities: Set<string> = new Set();
 
   constructor(config?: Partial<EngineConfig>) {
     this.config = {
@@ -71,6 +72,22 @@ export class GuardrailsEngine {
   /** Read the active temporal policy, if any. */
   get temporalPolicyConfig(): TemporalPolicy | undefined {
     return this.temporalPolicy;
+  }
+
+  /**
+   * Set entity types to exclude from remediation. Excluded entities are
+   * still detected and reported in results, but their original text is
+   * preserved (not redacted or synthesized). Detections for excluded
+   * entities are omitted from the aggregate redactionMap.
+   */
+  setExcludeEntities(entityTypes: string[]): this {
+    this._excludeEntities = new Set(entityTypes);
+    return this;
+  }
+
+  /** Read the set of excluded entity types. */
+  get excludeEntities(): ReadonlySet<string> {
+    return this._excludeEntities;
   }
 
   /** Register a guard with the engine */
@@ -176,6 +193,12 @@ export class GuardrailsEngine {
     const results = await this.analyze(text, ctx);
     const passed = results.every((r) => r.passed);
 
+    // Entity exclusion: if excludeEntities is configured, detections
+    // matching excluded entity types are preserved in results for
+    // visibility but NOT applied as redactions. This implements
+    // "detect-but-don't-act" semantics.
+    const hasExclusions = this._excludeEntities.size > 0;
+
     // Aggregate redactedText across guards. Strategy: collect ALL
     // detections from ALL guards into a single list, then perform one
     // unified redaction pass against the original text using the same
@@ -187,15 +210,15 @@ export class GuardrailsEngine {
       (r) => r.redactedText !== undefined && r.redactionMap !== undefined,
     );
 
-    if (allRedactingGuards.length === 1) {
-      // Single redacting guard: trust its output verbatim. Cheap and
-      // identical to the multi-guard path for this case.
+    if (allRedactingGuards.length === 1 && !hasExclusions) {
+      // Single redacting guard, no exclusions: trust its output verbatim.
       redactedText = allRedactingGuards[0].redactedText;
       aggregateMap.push(...allRedactingGuards[0].redactionMap!);
-    } else if (allRedactingGuards.length > 1) {
-      // Multiple guards redacted: gather all detections, sort by start
-      // descending, apply replacements once. The consistency map is
-      // already shared so synthesizers produce stable values.
+    } else if (allRedactingGuards.length >= 1) {
+      // Multiple guards redacted, or exclusions are active: gather all
+      // detections, filter excluded entities, sort by start descending,
+      // apply replacements once. The consistency map is already shared
+      // so synthesizers produce stable values.
       const allDetections: Array<{ d: Detection; entry: RedactionEntry }> = [];
       for (const r of allRedactingGuards) {
         const map = r.redactionMap!;
@@ -203,17 +226,28 @@ export class GuardrailsEngine {
           allDetections.push({ d: r.detections[i], entry: map[i] });
         }
       }
-      // Apply in reverse start order; collect output entries in
-      // document order for the aggregate map.
-      const sorted = [...allDetections].sort((a, b) => b.d.start - a.d.start);
-      let result = text;
-      for (const { d, entry } of sorted) {
-        result = result.slice(0, d.start) + entry.replacement + result.slice(d.end);
-      }
-      redactedText = result;
-      const docOrder = [...allDetections].sort((a, b) => a.d.start - b.d.start);
-      for (const { entry } of docOrder) {
-        aggregateMap.push(entry);
+
+      // Filter out excluded entity types from redaction
+      const activeDetections = hasExclusions
+        ? allDetections.filter(({ entry }) => !this._excludeEntities.has(entry.entityType))
+        : allDetections;
+
+      if (activeDetections.length > 0) {
+        // Apply in reverse start order; collect output entries in
+        // document order for the aggregate map.
+        const sorted = [...activeDetections].sort((a, b) => b.d.start - a.d.start);
+        let result = text;
+        for (const { d, entry } of sorted) {
+          result = result.slice(0, d.start) + entry.replacement + result.slice(d.end);
+        }
+        redactedText = result;
+        const docOrder = [...activeDetections].sort((a, b) => a.d.start - b.d.start);
+        for (const { entry } of docOrder) {
+          aggregateMap.push(entry);
+        }
+      } else {
+        // All detections were excluded — no redaction needed
+        redactedText = text;
       }
     }
 
