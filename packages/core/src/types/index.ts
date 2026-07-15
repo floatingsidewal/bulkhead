@@ -23,6 +23,8 @@ export interface Detection {
   score: number;
   /** Which guard produced this detection */
   guardName: string;
+  /** Matched heuristic keyword, when applicable */
+  matchedKeyword?: string;
   /** Which cascade layer produced this detection */
   source: DetectionSource;
   /** Surrounding text window for context */
