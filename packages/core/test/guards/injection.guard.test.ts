@@ -25,6 +25,28 @@ describe("InjectionGuard", () => {
     const result = await guard.analyze("Can you help me write a function?");
     expect(result.passed).toBe(true);
   });
+
+  it("does not flag whitespace-padded UI text that shares one common keyword token", async () => {
+    const result = await guard.analyze(
+      "        Safety Guidelines                                                           ",
+      { threshold: 0.5, mode: "block" },
+    );
+    expect(result.passed).toBe(true);
+    expect(result.detections).toHaveLength(0);
+  });
+
+  it("reports the matched heuristic window and keyword", async () => {
+    const sample =
+      "preface ignore ethical guidelines x x x x x x x x x x x x x x x filler filler filler filler filler filler filler filler filler filler";
+    const result = await guard.analyze(sample, { threshold: 0.5, mode: "block" });
+    const detection = result.detections.find((d) => d.entityType === "PROMPT_INJECTION");
+
+    expect(result.passed).toBe(false);
+    expect(detection).toBeDefined();
+    expect(detection?.end).toBeLessThan(sample.length);
+    expect(detection?.text).toContain("ignore ethical guidelines");
+    expect(detection?.matchedKeyword).toBe("ignore ethical guidelines");
+  });
 });
 
 describe("LeakageGuard", () => {
