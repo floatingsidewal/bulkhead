@@ -30,6 +30,39 @@ const redacted = await engine.scan("Call me at 555-867-5309");
 console.log(redacted.redactedText); // "Call me at [REDACTED-US_PHONE]"
 ```
 
+## Sanitize JSON-Compatible Documents
+
+`sanitizeDocument()` is the recommended API for objects and arrays. It scans
+keys and string values before mutation, resolves overlapping detections once,
+uses one consistency map and temporal anchor for the document, and reports
+pre-treatment detections separately from post-treatment safety.
+
+```typescript
+import { sanitizeDocument } from "@bulkhead-ai/core";
+
+const result = await sanitizeDocument(
+  {
+    contact: "person@example.com",
+    opened: "2026-07-10",
+    events: [{ occurred: "07/12/2026" }],
+  },
+  "eval",
+  { localizedDateOrder: "mdy" },
+);
+
+if (!result.metadata.postTreatment.safe ||
+    !result.metadata.postTreatment.structurallyValid) {
+  throw new Error("Sanitization boundary rejected output");
+}
+
+console.log(result.value);
+console.log(result.metadata.detectedRisk);
+```
+
+Localized dates require an explicit `mdy`, `dmy`, or `reject-ambiguous`
+choice. Detected dates that are ambiguous, invalid, or unsupported are replaced
+with `[REDACTED-DATE_TIME]` by default rather than passing through unchanged.
+
 ## What It Detects
 
 | Category | Coverage |

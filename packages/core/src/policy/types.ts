@@ -1,4 +1,5 @@
 import type { GuardMode } from "../types";
+import type { LocalizedDateOrder } from "../types";
 
 /** Severity level for risk rating */
 export type RiskLevel = "critical" | "high" | "medium" | "low" | "none";
@@ -91,6 +92,10 @@ export interface PolicyDefinition {
    * See TemporalPolicy and TemporalMode.
    */
   temporalPolicy?: TemporalPolicy;
+  /** Interpretation for localized dates in document-level sanitization. */
+  localizedDateOrder?: LocalizedDateOrder;
+  /** Safe replacement for a detected date that cannot be parsed. */
+  detectedUnparseableDateReplacement?: string;
 }
 
 /** Risk assessment returned alongside scan results */

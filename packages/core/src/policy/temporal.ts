@@ -39,6 +39,7 @@
  */
 
 import type { Detection } from "../types";
+import type { LocalizedDateOrder } from "../types";
 import type { TemporalPolicy } from "./types";
 
 /** UTC year-zero anchor. ISO 8601 valid; ECMAScript Date round-trips it.
@@ -47,6 +48,134 @@ import type { TemporalPolicy } from "./types";
  *  to get an actual year-0001 epoch. */
 const YEAR_ZERO_ANCHOR_ISO = "0001-01-01T00:00:00.000Z";
 const YEAR_ZERO_ANCHOR_MS = Date.parse(YEAR_ZERO_ANCHOR_ISO);
+
+export interface ParsedTemporalDate {
+  date: Date;
+  format: "iso" | "ymd" | "localized";
+}
+
+export interface TemporalReplacementPlan {
+  replacements: Map<string, string>;
+  temporalAnchor?: string;
+}
+
+function validCalendarDate(year: number, month: number, day: number): boolean {
+  if (month < 1 || month > 12 || day < 1) return false;
+  const probe = new Date(`${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T00:00:00.000Z`);
+  return (
+    !Number.isNaN(probe.getTime()) &&
+    probe.getUTCFullYear() === year &&
+    probe.getUTCMonth() === month - 1 &&
+    probe.getUTCDate() === day
+  );
+}
+
+/**
+ * Parse only documented date forms. This intentionally avoids host locale
+ * parsing and validates calendar fields before asking Date to parse a
+ * timestamp. Two-digit years are never accepted.
+ */
+export function parseTemporalDate(
+  value: string,
+  localizedDateOrder: LocalizedDateOrder = "reject-ambiguous",
+): ParsedTemporalDate | null {
+  const iso = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d{1,3})?(Z|[+-](?:0\d|1\d|2[0-3]):[0-5]\d)$/,
+  );
+  if (iso) {
+    const [, y, m, d, hour, minute, second] = iso;
+    if (
+      !validCalendarDate(Number(y), Number(m), Number(d)) ||
+      Number(hour) > 23 ||
+      Number(minute) > 59 ||
+      Number(second) > 59
+    ) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : { date, format: "iso" };
+  }
+
+  const ymd = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (ymd) {
+    const [, y, m, d] = ymd;
+    if (!validCalendarDate(Number(y), Number(m), Number(d))) return null;
+    return { date: new Date(`${value}T00:00:00.000Z`), format: "ymd" };
+  }
+
+  const localized = value.match(/^(\d{1,2})[/.](\d{1,2})[/.](\d{4})$/);
+  if (!localized) return null;
+  const [, first, second, yearText] = localized;
+  const firstNumber = Number(first);
+  const secondNumber = Number(second);
+  const year = Number(yearText);
+  const ambiguous = firstNumber <= 12 && secondNumber <= 12;
+  if (ambiguous && localizedDateOrder === "reject-ambiguous") return null;
+  // A component above 12 makes the order unambiguous, regardless of the
+  // caller's preference. The preference only decides genuinely ambiguous
+  // values such as 07/08/2026.
+  const order =
+    firstNumber > 12 ? "dmy" : secondNumber > 12 ? "mdy" : localizedDateOrder === "dmy" ? "dmy" : "mdy";
+  const month = order === "mdy" ? firstNumber : secondNumber;
+  const day = order === "mdy" ? secondNumber : firstNumber;
+  if (!validCalendarDate(year, month, day)) return null;
+  return {
+    date: new Date(`${yearText}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T00:00:00.000Z`),
+    format: "localized",
+  };
+}
+
+/**
+ * Produce document-wide temporal replacements. Every DATE_TIME detection is
+ * either transformed or mapped to the explicit safe fallback; no parse
+ * failure can seed a no-op consistency entry.
+ */
+export function planTemporalReplacements(
+  detections: Detection[],
+  policy: TemporalPolicy | undefined,
+  localizedDateOrder: LocalizedDateOrder = "reject-ambiguous",
+  fallback = "[REDACTED-DATE_TIME]",
+): TemporalReplacementPlan {
+  const replacements = new Map<string, string>();
+  const dates = detections.filter((d) => d.entityType === "DATE_TIME");
+  if (dates.length === 0) return { replacements };
+
+  const parsed = dates.map((d) => ({ detection: d, parsed: parseTemporalDate(d.text, localizedDateOrder) }));
+  const safe = (entry: (typeof parsed)[number]) => {
+    if (!entry.parsed) replacements.set(entry.detection.text, fallback);
+  };
+
+  if (!policy || policy.mode === "preserve") {
+    for (const entry of parsed) safe(entry);
+    return { replacements };
+  }
+  if (policy.mode === "rebase-year-zero") {
+    for (const entry of parsed) {
+      if (!entry.parsed) {
+        safe(entry);
+        continue;
+      }
+      const rebased = rebaseYearZero(entry.detection.text);
+      replacements.set(
+        entry.detection.text,
+        parseTemporalDate(rebased, localizedDateOrder) ? rebased : fallback,
+      );
+    }
+    return { replacements };
+  }
+
+  const parseable = parsed.filter(
+    (entry): entry is { detection: Detection; parsed: ParsedTemporalDate } => entry.parsed !== null,
+  );
+  for (const entry of parsed) safe(entry);
+  if (parseable.length === 0) return { replacements };
+  const earliest = Math.min(...parseable.map((entry) => entry.parsed.date.getTime()));
+  for (const entry of parseable) {
+    replacements.set(
+      entry.detection.text,
+      formatYearZeroOffset(entry.parsed.date.getTime() - earliest, policy.precision),
+    );
+  }
+  return { replacements, temporalAnchor: new Date(earliest).toISOString() };
+}
 
 /**
  * Round a Date down to a coarser unit. Used to optionally reduce the

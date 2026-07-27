@@ -99,6 +99,24 @@ console.log(risk.level);   // "high"
 console.log(risk.issues);  // [{ category: "pii", entityType: "US_SSN", severity: "high", isTestData: true }]
 ```
 
+For JSON-compatible payloads, use the document API so Bulkhead owns traversal,
+overlap handling, date treatment, reconstruction, and residual validation:
+
+```typescript
+import { sanitizeDocument } from "@bulkhead-ai/core";
+
+const result = await sanitizeDocument(payload, "eval", {
+  localizedDateOrder: "reject-ambiguous",
+});
+
+if (!result.metadata.postTreatment.safe ||
+    !result.metadata.postTreatment.structurallyValid) {
+  throw new Error("Sanitization boundary rejected output");
+}
+
+send(JSON.stringify(result.value));
+```
+
 See the [How-To Guide](docs/how-to.md) for comprehensive examples including medical record scanning, bulk data redaction, and custom policies.
 
 ## Project Structure

@@ -38,6 +38,13 @@ export type {
   RedactionEntry,
   Synthesizer,
   SynthesizerContext,
+  JsonValue,
+  LocalizedDateOrder,
+  SanitizeDocumentOptions,
+  DetectionSummary,
+  ResidualFinding,
+  TreatmentMetadata,
+  SanitizeResult,
 } from "./types";
 
 // Synthesizer registry + defaults (Phase 6 — synthesize mode)
@@ -80,6 +87,9 @@ export type {
   TemporalMode,
   TemporalPolicy,
 } from "./policy";
+
+export { sanitizeDocument } from "./sanitization";
+export type { SanitizePolicy } from "./sanitization";
 
 // Policy-aware engine creation
 import { resolveRef, resolvePolicy, policyToEngineConfig } from "./policy";

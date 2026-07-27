@@ -33,6 +33,44 @@ All import examples in this guide use `@bulkhead-ai/core`.
 
 ---
 
+## One-Call Document Sanitization
+
+Use `sanitizeDocument()` for JSON-compatible payloads. It preserves the
+object/array shape, scans dynamic keys and string values, shares treatment state
+across the complete document, and returns a final residual-safety decision.
+
+```typescript
+import { sanitizeDocument } from "@bulkhead-ai/core";
+
+const result = await sanitizeDocument(
+  {
+    contact: "person@example.com",
+    opened: "2026-07-10",
+    events: [{ occurred: "07/12/2026" }],
+  },
+  "eval",
+  { localizedDateOrder: "mdy" },
+);
+
+if (!result.metadata.postTreatment.safe ||
+    !result.metadata.postTreatment.structurallyValid) {
+  throw new Error("Sanitization boundary rejected output");
+}
+
+const body = JSON.stringify(result.value);
+```
+
+Choose `"mdy"` or `"dmy"` when localized dates are expected. The safer default,
+`"reject-ambiguous"`, replaces ambiguous localized dates. Detected invalid
+calendar dates and unsupported short years also use
+`[REDACTED-DATE_TIME]` unless a different fallback is configured.
+
+The original `scan()`, `scanObject()`, and `policyScan()` APIs remain supported.
+They are appropriate for lower-level text scanning; `sanitizeDocument()` is the
+plug-and-play boundary for structured data.
+
+---
+
 ## Basic Scanning
 
 `createEngine()` returns an engine with PII, secret, and injection guards enabled by default. The regex layer runs in sub-millisecond time.

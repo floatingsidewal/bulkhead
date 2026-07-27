@@ -13,4 +13,9 @@ export type {
 export { BUILTIN_POLICIES, getPolicy } from "./presets";
 export { resolvePolicy, policyToEngineConfig, resolveRef } from "./resolve";
 export { assessRisk } from "./risk";
-export { computeTemporalReplacements, rebaseYearZero } from "./temporal";
+export {
+  computeTemporalReplacements,
+  rebaseYearZero,
+  parseTemporalDate,
+  planTemporalReplacements,
+} from "./temporal";
