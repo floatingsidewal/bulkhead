@@ -2,7 +2,7 @@
 
 ## Core Engine API
 
-`@floatingsidewal/bulkhead-core` exposes a `GuardrailsEngine` class for use as a library. This is the same engine the HTTP and MCP servers wrap; consumers embedding bulkhead directly (eg. eval-corpus harvesters, custom CLI tools) call these methods.
+`@bulkhead-ai/core` exposes a `GuardrailsEngine` class for use as a library. This is the same engine the HTTP and MCP servers wrap; consumers embedding bulkhead directly (eg. eval-corpus harvesters, custom CLI tools) call these methods.
 
 ```ts
 import { createEngine, getPolicy } from "@bulkhead-ai/core";

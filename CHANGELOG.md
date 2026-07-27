@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [VERSIONING.md](VERSIONING.md) for version numbering conventions.
 
+## [0.9.1](https://github.com/floatingsidewal/bulkhead/compare/v0.9.0...v0.9.1) (2026-07-27)
+
+### Bug Fixes
+
+* make `@bulkhead-ai/core` and `@bulkhead-ai/server` the canonical source and workspace identities
+* preserve the `@floatingsidewal/*` names only in transformed GitHub Packages publication
+* keep local tarballs, git tags, npm manifests, imports, and release notes aligned
+* correct server CLI `bin` paths so npm retains both executables
+
 ## [0.9.0](https://github.com/floatingsidewal/bulkhead/compare/v0.7.0...v0.9.0) (2026-07-27)
 
 ### Features

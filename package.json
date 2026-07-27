@@ -1,6 +1,6 @@
 {
   "name": "bulkhead",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "private": true,
   "license": "MIT",
   "workspaces": [
@@ -13,7 +13,9 @@
   },
   "scripts": {
     "build": "npm run build --workspaces",
-    "test": "npm run test -w @floatingsidewal/bulkhead-core && npm run test -w @floatingsidewal/bulkhead-server",
+    "test": "npm run test -w @bulkhead-ai/core && npm run test -w @bulkhead-ai/server",
+    "test:package-identities": "node scripts/check-package-identities.mjs",
+    "test:package-bins": "node scripts/check-server-bins.mjs",
     "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {

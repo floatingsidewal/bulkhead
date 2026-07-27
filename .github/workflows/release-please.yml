@@ -54,37 +54,29 @@ jobs:
       - name: Publish @bulkhead-ai/core to npmjs
         run: |
           cd packages/core
-          node -e "
-            const p=require('./package.json');
-            p.name='@bulkhead-ai/core';
-            delete p.publishConfig;
-            require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
-          "
+          set +e
           npm publish --provenance --access public --tag ${{ steps.dist-tag.outputs.tag }} 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
+          set -e
           if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::version already published, skipping" || exit "$code"; fi
 
       - name: Publish @bulkhead-ai/server to npmjs
         run: |
           cd packages/server
-          node -e "
-            const p=require('./package.json');
-            p.name='@bulkhead-ai/server';
-            p.dependencies['@bulkhead-ai/core']=p.dependencies['@floatingsidewal/bulkhead-core'];
-            delete p.dependencies['@floatingsidewal/bulkhead-core'];
-            delete p.publishConfig;
-            require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
-          "
+          set +e
           npm publish --provenance --access public --tag ${{ steps.dist-tag.outputs.tag }} 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
+          set -e
           if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::version already published, skipping" || exit "$code"; fi
 
       - name: Publish to GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git checkout -- packages/core/package.json packages/server/package.json
+          node scripts/prepare-github-package-manifests.mjs
           npm config set //npm.pkg.github.com/:_authToken=$NODE_AUTH_TOKEN
           npm config set @floatingsidewal:registry=https://npm.pkg.github.com/
-          for ws in @floatingsidewal/bulkhead-core @floatingsidewal/bulkhead-server; do
-            npm publish --workspace="$ws" --no-git-checks --tag ${{ steps.dist-tag.outputs.tag }} 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
-            if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::$ws already published, skipping" || exit "$code"; fi
+          for package in packages/core packages/server; do
+            set +e
+            npm publish "./$package" --no-git-checks --tag ${{ steps.dist-tag.outputs.tag }} 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
+            set -e
+            if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::$package already published, skipping" || exit "$code"; fi
           done
