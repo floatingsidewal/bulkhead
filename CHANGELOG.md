@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [VERSIONING.md](VERSIONING.md) for version numbering conventions.
 
+## [0.9.0](https://github.com/floatingsidewal/bulkhead/compare/v0.7.0...v0.9.0) (2026-07-27)
+
+### Features
+
+* **core:** add plug-and-play document sanitization with scan-wide consistency, temporal anchoring, overlap arbitration, native reconstruction, and residual safety metadata ([73fad61](https://github.com/floatingsidewal/bulkhead/commit/73fad61a401fb7ad8761844cdf85adbef809ff4e))
+
+### Compatibility
+
+* Existing `scan()`, `scanObject()`, and `policyScan()` APIs remain supported.
+* Structured-data consumers can migrate to async `sanitizeDocument()` and retain only their final fail-closed boundary check.
+* Ambiguous localized dates default to safe replacement unless `mdy` or `dmy` is selected explicitly.
+
 ## [0.5.7](https://github.com/floatingsidewal/bulkhead/compare/bulkhead-v0.5.6...bulkhead-v0.5.7) (2026-05-28)
 
 

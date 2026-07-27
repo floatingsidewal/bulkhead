@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.0](https://github.com/floatingsidewal/bulkhead/compare/bulkhead-core-v0.7.0...bulkhead-core-v0.9.0) (2026-07-27)
+
+### Features
+
+* add async `sanitizeDocument()` for JSON-compatible keys and values
+* share replacement consistency and one temporal anchor across a document
+* support strict ISO, `yyyy-mm-dd`, and localized date treatment with fail-safe fallback
+* arbitrate cross-guard overlaps before mutation and conservatively redact unsafe unions
+* return separate pre-treatment detection and post-treatment residual-safety metadata
+* preserve document shape and entries with collision-safe sanitized keys
+
+### Compatibility
+
+* Existing engine scan APIs remain supported.
+* Localized date ambiguity defaults to `reject-ambiguous`.
+* Detected invalid, short-year, or unparseable dates default to `[REDACTED-DATE_TIME]`.
+
 ## [0.6.0](https://github.com/floatingsidewal/bulkhead/compare/bulkhead-core-v0.5.6...bulkhead-core-v0.6.0) (2026-05-28)
 
 
