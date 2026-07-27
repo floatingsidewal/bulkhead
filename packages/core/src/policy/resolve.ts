@@ -97,6 +97,14 @@ function mergePolicies(
     result.temporalPolicy =
       overlayPrec >= basePrec ? overlay.temporalPolicy : base.temporalPolicy;
   }
+  // Document-level parsing options are explicit policy choices. An overlay
+  // that names one intentionally replaces the base choice.
+  if (overlay.localizedDateOrder !== undefined) {
+    result.localizedDateOrder = overlay.localizedDateOrder;
+  }
+  if (overlay.detectedUnparseableDateReplacement !== undefined) {
+    result.detectedUnparseableDateReplacement = overlay.detectedUnparseableDateReplacement;
+  }
 
   return result;
 }

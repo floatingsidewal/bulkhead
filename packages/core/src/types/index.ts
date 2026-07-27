@@ -209,6 +209,66 @@ export interface ObjectScanResult<T> {
   pathDetections: Record<string, Detection[]>;
 }
 
+/** A value that can be represented without loss in JSON. */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+/** How slash-delimited localized dates are interpreted. */
+export type LocalizedDateOrder = "mdy" | "dmy" | "reject-ambiguous";
+
+/** Options specific to one document sanitization call. */
+export interface SanitizeDocumentOptions {
+  /** Interpretation for localized four-digit-year dates. Defaults to reject ambiguous dates. */
+  localizedDateOrder?: LocalizedDateOrder;
+  /** Replacement for a detected date that cannot be parsed safely. */
+  detectedUnparseableDateReplacement?: string;
+  /** Reserved for callers that need to make a call's clock explicit. */
+  now?: Date;
+}
+
+/** A detection before treatment, located in the logical JSON document. */
+export interface DetectionSummary {
+  category: string;
+  sourcePath: string;
+  sourceSpan?: { start: number; end: number };
+  treatment: "replaced" | "rebased" | "merged-redaction" | "untreated";
+}
+
+/** Risk that remained after reconstruction. */
+export interface ResidualFinding {
+  category: string;
+  path: string;
+  reason: "surviving-source-value" | "untreated-detection";
+}
+
+/** Pre-treatment risk and the result of the final logical safety check. */
+export interface TreatmentMetadata {
+  detectedRisk: {
+    count: number;
+    categories: Record<string, number>;
+    detections: DetectionSummary[];
+  };
+  postTreatment: {
+    safe: boolean;
+    residuals: ResidualFinding[];
+    structurallyValid: boolean;
+  };
+  temporalAnchor?: string;
+  /** Collision-safe keys emitted while preserving all original object entries. */
+  keyCollisions?: Array<{ path: string; replacement: string }>;
+}
+
+/** Result of object-native document sanitization. */
+export interface SanitizeResult<T extends JsonValue> {
+  value: T;
+  metadata: TreatmentMetadata;
+}
+
 /** A PII pattern definition */
 export interface PiiPattern {
   /** Entity type name (e.g., "CREDIT_CARD") */

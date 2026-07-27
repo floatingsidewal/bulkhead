@@ -12,6 +12,55 @@ const result = await engine.scan("Email: john@example.com");
 console.log(result.redactedText); // "Email: [REDACTED-EMAIL_ADDRESS]"
 ```
 
+### `sanitizeDocument(input, policy, options?)`
+
+Sanitizes a JSON-compatible value with one document-wide treatment plan.
+Unlike repeated `scan()` calls, it scans object keys and string values before
+mutation, arbitrates cross-guard overlaps, shares replacement consistency and
+the temporal anchor across every leaf, reconstructs the value natively, and
+runs a logical residual-safety check.
+
+```ts
+import {
+  sanitizeDocument,
+  type SanitizePolicy,
+} from "@bulkhead-ai/core";
+
+const policy: SanitizePolicy = "eval";
+const result = await sanitizeDocument(payload, policy, {
+  localizedDateOrder: "reject-ambiguous",
+  detectedUnparseableDateReplacement: "[REDACTED-DATE_TIME]",
+});
+
+if (!result.metadata.postTreatment.safe ||
+    !result.metadata.postTreatment.structurallyValid) {
+  throw new Error("Sanitization boundary rejected output");
+}
+
+send(JSON.stringify(result.value));
+```
+
+`localizedDateOrder` accepts `"mdy"`, `"dmy"`, or `"reject-ambiguous"`
+(the default). ISO timestamps, `yyyy-mm-dd`, and unambiguous localized dates
+can be rebased by temporal policy. Ambiguous, short-year, invalid, or otherwise
+unparseable detected dates receive the configured fallback and never an
+identity replacement.
+
+`metadata.detectedRisk` describes the original detections and selected
+treatments. `metadata.postTreatment` independently reports residual safety and
+JSON structural validity. A detection count greater than zero does not mean the
+treated value is unsafe.
+
+Overlaps are resolved before offsets are applied. A fixed guard/confidence
+precedence selects a full-span winner when safe; otherwise the union is replaced
+with `[REDACTED]`. Sanitized key collisions receive deterministic
+`[REDACTED-KEY-N]` names so entries are not silently lost.
+
+`scan()`, `scanObject()`, and `policyScan()` remain available for compatibility
+and lower-level text workflows. Consumers migrating object sanitization should
+remove local date parsing, JSON escape repair, overlap mutation, and residual
+substring shims while retaining their final fail-closed boundary check.
+
 ### `engine.scan(text)`
 
 **Layer 1 only.** Runs all enabled regex-based guards. Sub-millisecond latency.

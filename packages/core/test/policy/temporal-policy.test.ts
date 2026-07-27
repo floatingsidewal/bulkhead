@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   computeTemporalReplacements,
+  parseTemporalDate,
+  planTemporalReplacements,
   rebaseYearZero,
 } from "../../src/policy/temporal";
 import { GuardrailsEngine } from "../../src/engine/engine";
@@ -25,6 +27,31 @@ function makeDateDetection(text: string, start: number): Detection {
 }
 
 describe("temporal policy", () => {
+  describe("strict document parsing", () => {
+    it("parses ISO, yyyy-mm-dd, and unambiguous localized values without host locale", () => {
+      expect(parseTemporalDate("2026-07-10T12:00:00Z")).not.toBeNull();
+      expect(parseTemporalDate("2026-07-10")).not.toBeNull();
+      expect(parseTemporalDate("07/14/2026", "reject-ambiguous")).not.toBeNull();
+      expect(parseTemporalDate("14/07/2026", "reject-ambiguous")).not.toBeNull();
+    });
+
+    it("rejects ambiguous, short-year, and invalid calendar values", () => {
+      expect(parseTemporalDate("07/08/2026", "reject-ambiguous")).toBeNull();
+      expect(parseTemporalDate("7/14/26", "mdy")).toBeNull();
+      expect(parseTemporalDate("2026-02-31")).toBeNull();
+    });
+
+    it("uses the configured safe fallback for detected unparseable dates", () => {
+      const replacements = planTemporalReplacements(
+        [makeDateDetection("2026-02-31", 0)],
+        { mode: "rebase-relative-to-earliest" },
+        "reject-ambiguous",
+        "[DATE-REMOVED]",
+      );
+      expect(replacements.replacements.get("2026-02-31")).toBe("[DATE-REMOVED]");
+    });
+  });
+
   // -------------------------------------------------------------------------
   // rebaseYearZero (unit)
   // -------------------------------------------------------------------------
