@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/floatingsidewal/bulkhead/compare/bulkhead-core-v0.9.0...bulkhead-core-v0.9.1) (2026-07-27)
+
+### Bug Fixes
+
+* use the public npm identity `@bulkhead-ai/core` directly in the source manifest and workspace
+* add a package-identity contract check to prevent release-time manifest rewriting from drifting again
+
 ## [0.9.0](https://github.com/floatingsidewal/bulkhead/compare/bulkhead-core-v0.7.0...bulkhead-core-v0.9.0) (2026-07-27)
 
 ### Features

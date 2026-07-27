@@ -33,25 +33,15 @@ jobs:
       - name: Publish @bulkhead-ai/core
         run: |
           cd packages/core
-          node -e "
-            const p=require('./package.json');
-            p.name='@bulkhead-ai/core';
-            delete p.publishConfig;
-            require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
-          "
+          set +e
           npm publish --provenance --access public 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
+          set -e
           if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::version already published, skipping" || exit "$code"; fi
 
       - name: Publish @bulkhead-ai/server
         run: |
           cd packages/server
-          node -e "
-            const p=require('./package.json');
-            p.name='@bulkhead-ai/server';
-            p.dependencies['@bulkhead-ai/core']=p.dependencies['@floatingsidewal/bulkhead-core'];
-            delete p.dependencies['@floatingsidewal/bulkhead-core'];
-            delete p.publishConfig;
-            require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
-          "
+          set +e
           npm publish --provenance --access public 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
+          set -e
           if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::version already published, skipping" || exit "$code"; fi

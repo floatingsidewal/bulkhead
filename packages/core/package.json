@@ -1,6 +1,6 @@
 {
-  "name": "@floatingsidewal/bulkhead-core",
-  "version": "0.9.0",
+  "name": "@bulkhead-ai/core",
+  "version": "0.9.1",
   "description": "Cascading content protection engine — PII detection, secret scanning, prompt injection defense",
   "license": "MIT",
   "repository": {
@@ -25,7 +25,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false,
   "main": "./dist/index.js",

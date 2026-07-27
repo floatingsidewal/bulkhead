@@ -47,9 +47,9 @@ jobs:
       - name: Build core (required for server tests)
         run: cd packages/core && npx tsup
       - name: Core unit tests
-        run: npm test --workspace=@floatingsidewal/bulkhead-core
+        run: npm test --workspace=@bulkhead-ai/core
       - name: Server integration tests
-        run: npm test --workspace=@floatingsidewal/bulkhead-server
+        run: npm test --workspace=@bulkhead-ai/server
 
   build:
     name: Build & Publish npm
@@ -72,16 +72,25 @@ jobs:
         run: cd packages/server && npx tsup
 
       # Publish to GitHub Packages (public, no PAT needed for consumers)
-      - name: Publish @floatingsidewal/bulkhead-core
+      - name: Verify package identities
+        run: npm run test:package-identities
+      - name: Verify server package binaries
+        run: npm run test:package-bins
+
+      - name: Publish to GitHub Packages
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: npm publish --workspace=@floatingsidewal/bulkhead-core --no-git-checks || echo "Version already published, skipping"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish @floatingsidewal/bulkhead-server
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: npm publish --workspace=@floatingsidewal/bulkhead-server --no-git-checks || echo "Version already published, skipping"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/prepare-github-package-manifests.mjs
+          npm config set //npm.pkg.github.com/:_authToken=$NODE_AUTH_TOKEN
+          npm config set @floatingsidewal:registry=https://npm.pkg.github.com/
+          for package in packages/core packages/server; do
+            set +e
+            npm publish "./$package" --no-git-checks 2>&1 | tee pub.log; code=${PIPESTATUS[0]}
+            set -e
+            if [ "$code" -ne 0 ]; then grep -qiE 'cannot publish over|previously published|EPUBLISHCONFLICT|409' pub.log && echo "::notice::$package already published, skipping" || exit "$code"; fi
+          done
 
       # npmjs.org publishing is handled by the separate publish-npmjs.yml workflow (manual trigger)
 
